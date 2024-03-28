@@ -1,12 +1,25 @@
 package ringll
 
-import "shadygoat.eu/shitdb"
+import (
+	"sync"
 
-func NewRing[IDType shitdb.IDConstraint](size int) {
+	"shadygoat.eu/shitdb"
+)
 
+// Creates a new linked list ring backend
+func NewRing[IDType shitdb.IDConstraint](size int) *RingLinkedListBackend[IDType] {
+	return &RingLinkedListBackend[IDType]{
+		idCache: map[IDType]*Node[IDType]{},
+		size:    0,
+		maxSize: size,
+		lock:    &sync.RWMutex{},
+		newest:  nil,
+		oldest:  nil,
+	}
 }
 
-func (r *RingBackend[IDType]) Register(h *shitdb.Hooks[IDType]) {
+// Appends the ring's hooks at the end of the current hook list.
+func (r *RingLinkedListBackend[IDType]) Register(h *shitdb.Hooks[IDType]) {
 	h.Insert = append(h.Insert, r.Insert)
 	h.DeleteID = append(h.DeleteID, r.DeleteID)
 	h.DeleteQuery = append(h.DeleteQuery, r.DeleteWithFilter)
@@ -14,7 +27,7 @@ func (r *RingBackend[IDType]) Register(h *shitdb.Hooks[IDType]) {
 	h.Read = append(h.Read, r.ReadWithFilter)
 }
 
-func (r *RingBackend[IDType]) DeleteID(ids ...IDType) {
+func (r *RingLinkedListBackend[IDType]) DeleteID(ids ...IDType) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
@@ -29,7 +42,7 @@ func (r *RingBackend[IDType]) DeleteID(ids ...IDType) {
 	r.size -= deletedIDs
 }
 
-func (r *RingBackend[IDType]) Insert(groups ...shitdb.Group[IDType]) {
+func (r *RingLinkedListBackend[IDType]) Insert(groups ...shitdb.Group[IDType]) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
@@ -44,7 +57,7 @@ func (r *RingBackend[IDType]) Insert(groups ...shitdb.Group[IDType]) {
 		} else {
 			r.newest.Next = n
 		}
-		
+
 		r.newest = n
 		r.size++
 		r.idCache[g.GetID()] = n
@@ -56,7 +69,7 @@ func (r *RingBackend[IDType]) Insert(groups ...shitdb.Group[IDType]) {
 	}
 }
 
-func (r *RingBackend[IDType]) ReadIDs(ids ...IDType) []shitdb.Group[IDType] {
+func (r *RingLinkedListBackend[IDType]) ReadIDs(ids ...IDType) []shitdb.Group[IDType] {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 
@@ -71,7 +84,7 @@ func (r *RingBackend[IDType]) ReadIDs(ids ...IDType) []shitdb.Group[IDType] {
 	return o
 }
 
-type nextFunc[IDType shitdb.IDConstraint] func (n *Node[IDType]) *Node[IDType]
+type nextFunc[IDType shitdb.IDConstraint] func(n *Node[IDType]) *Node[IDType]
 
 func nextOldToNew[IDType shitdb.IDConstraint](n *Node[IDType]) *Node[IDType] {
 	return n.Next
@@ -80,7 +93,7 @@ func nextNewToOld[IDType shitdb.IDConstraint](n *Node[IDType]) *Node[IDType] {
 	return n.Prev
 }
 
-func (r *RingBackend[IDType]) DeleteWithFilter(idPointer *shitdb.IDPointer[IDType], oldToNew bool, f shitdb.Filter[IDType]) {
+func (r *RingLinkedListBackend[IDType]) DeleteWithFilter(idPointer *shitdb.IDPointer[IDType], oldToNew bool, f shitdb.Filter[IDType]) {
 	r.lock.RLock()
 	defer r.lock.Unlock()
 
@@ -89,7 +102,7 @@ func (r *RingBackend[IDType]) DeleteWithFilter(idPointer *shitdb.IDPointer[IDTyp
 	})
 }
 
-func (r *RingBackend[IDType]) ReadWithFilter(idPointer *shitdb.IDPointer[IDType], oldToNew bool, f shitdb.Filter[IDType]) []shitdb.Group[IDType] {
+func (r *RingLinkedListBackend[IDType]) ReadWithFilter(idPointer *shitdb.IDPointer[IDType], oldToNew bool, f shitdb.Filter[IDType]) []shitdb.Group[IDType] {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 

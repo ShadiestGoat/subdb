@@ -26,7 +26,7 @@ type IDConstraint = constraints.Ordered
 type Group[IDType IDConstraint] interface {
 	GetID() IDType
 	Load([]Field)
-	Store() ([]Field)
+	Store() []Field
 }
 
 type Filter[IDType IDConstraint] interface {
@@ -45,9 +45,23 @@ const (
 	LOCATION_HINT_NEWEST
 )
 
+type ApproximationBehavior int
+
+const (
+	// If the backend doesn't have the idp, quit
+	APPROXIMATE_QUIT_EARLY ApproximationBehavior = iota
+	APPROXIMATE_OLDEST
+	APPROXIMATE_NEWEST
+)
+
 type IDPointer[IDType IDConstraint] struct {
 	ID   IDType
 	Hint LocationHint
+	// If the id is not in a backend but there are surrounding ids, how to approximate
+	// Eg. the pointer is 3, and db layout is this:
+	// oldest -> 1, 2, 4, 5 <- newest
+	// If APPROXIMATE_OLDEST, idp will approximate to 2. If APPROXIMATE_NEWEST, idp will be 4.
+	ApproximationBehavior ApproximationBehavior
 }
 
 // idPointer is a pointer to the starting id at which to apply f. If the pointer is nil, it will be ignored.
@@ -72,8 +86,8 @@ type Hooks[IDType IDConstraint] struct {
 }
 
 type Domain[IDType IDConstraint] struct {
-	Fields         []Field
-	Hooks          Hooks[IDType]
+	Fields []Field
+	Hooks  Hooks[IDType]
 }
 
 // domain -> group -> field
