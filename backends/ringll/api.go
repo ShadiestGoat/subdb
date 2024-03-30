@@ -102,15 +102,15 @@ func (r *RingLinkedListBackend[IDType]) DeleteWithFilter(idPointer *shitdb.IDPoi
 	})
 }
 
-func (r *RingLinkedListBackend[IDType]) ReadWithFilter(idPointer *shitdb.IDPointer[IDType], oldToNew bool, f shitdb.Filter[IDType]) []shitdb.Group[IDType] {
+func (r *RingLinkedListBackend[IDType]) ReadWithFilter(idPointer *shitdb.IDPointer[IDType], oldToNew bool, f shitdb.Filter[IDType]) ([]shitdb.Group[IDType], bool) {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 
 	o := []shitdb.Group[IDType]{}
 
-	r.queryFunc(idPointer, oldToNew, f, func(g shitdb.Group[IDType]) {
+	exitEarly := r.queryFunc(idPointer, oldToNew, f, func(g shitdb.Group[IDType]) {
 		o = append(o, g)
 	})
 
-	return o
+	return o, exitEarly
 }

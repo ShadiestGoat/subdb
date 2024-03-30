@@ -4,6 +4,8 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
+//go:generate sh generate.sh "hooks"
+
 type Field interface {
 	Encode() []byte
 	Load(v []byte)
@@ -33,9 +35,6 @@ type Filter[IDType IDConstraint] interface {
 	// Return true if matches
 	Match(g Group[IDType]) (ok bool, returnEarly bool)
 }
-
-type InsertFunc[IDType IDConstraint] func(groups ...Group[IDType])
-type DeleteIDFunc[IDType IDConstraint] func(ids ...IDType)
 
 type LocationHint int
 
@@ -68,22 +67,6 @@ type IDPointer[IDType IDConstraint] struct {
 // oldToNew indicated which direction to read. If the data is believed to be recent, it is faster to query for new to old (ie. false), though this does not matter if the filter is limitless & the id pointer is nil
 // oldToNew also affects the idPointer. It decides which direction to go after the id is met.
 type GeneralQueryFunc[IDType IDConstraint] func(idPointer *IDPointer[IDType], oldToNew bool, f Filter[IDType])
-
-// See GeneralQueryFunc
-type DeleteQueryFunc[IDType IDConstraint] GeneralQueryFunc[IDType]
-
-// See GeneralQueryFunc
-type ReadFunc[IDType IDConstraint] func(idPointer *IDPointer[IDType], oldToNew bool, f Filter[IDType]) []Group[IDType]
-
-type ReadIDFunc[IDType IDConstraint] func(ids ...IDType) []Group[IDType]
-
-type Hooks[IDType IDConstraint] struct {
-	Insert      []InsertFunc[IDType]
-	DeleteID    []DeleteIDFunc[IDType]
-	DeleteQuery []DeleteQueryFunc[IDType]
-	Read        []ReadFunc[IDType]
-	ReadID      []ReadIDFunc[IDType]
-}
 
 type Domain[IDType IDConstraint] struct {
 	Fields []Field

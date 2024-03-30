@@ -1,93 +1,85 @@
 package ring
 
 import (
-	"sort"
-
 	"shadygoat.eu/shitdb"
+	"shadygoat.eu/shitdb/backends/all/lib"
 )
 
-func (r *RingArrayBackend[IDType]) genQueryCMP(t IDType) func(int) int {
-	if r.newestIsLargest {
-		return func(i int) int {
-			v := r.items[i].GetID()
+type RingArrayBackend[IDType shitdb.IDConstraint] struct {
+	real   lib.CommonArrayBackendUtil[IDType]
+	maxLen int
+}
 
-			if t < v {
-				return -1
-			}
-			if t == v {
-				return 0
-			}
-	
-			return 1
-		}
-	}
-
-	return func(i int) int {
-		v := r.items[i].GetID()
-
-		if t > v {
-			return -1
-		}
-		if t == v {
-			return 0
-		}
-
-		return 1
+func NewRingArrayBackend[IDType shitdb.IDConstraint](maxSize int, newestIsLargest bool) RingArrayBackend[IDType] {
+	return RingArrayBackend[IDType]{
+		real: lib.NewCommonArrayUtil[IDType](func() []shitdb.Group[IDType] {
+			return make([]shitdb.Group[IDType], 0, maxSize)
+		}, newestIsLargest),
+		maxLen: maxSize,
 	}
 }
 
-func (r *RingArrayBackend[IDType]) queryFunc(idPointer *shitdb.IDPointer[IDType], oldToNew bool, f shitdb.Filter[IDType], action func(g shitdb.Group[IDType], i int)) {
-	var i int
+// Appends the ring's hooks at the end of the current hook list.
+func (r *RingArrayBackend[IDType]) Register(h *shitdb.Hooks[IDType]) {
+	h.Insert = append(h.Insert, r.Insert)
+	r.real.Register(h)
+}
 
-	d := -1
-
-	if oldToNew {
-		d = 1
+func (r *RingArrayBackend[IDType]) Insert(groups ...shitdb.Group[IDType]) {
+	if len(groups) == 0 {
+		return
+	}
+	if len(groups) > r.maxLen {
+		groups = groups[len(groups)-r.maxLen:]
 	}
 
-	if idPointer != nil {
-		idp := idPointer.ID
+	r.real.Lock.Lock()
+	defer r.real.Lock.Unlock()
 
-		if idPointer.ApproximationBehavior == shitdb.APPROXIMATE_QUIT_EARLY && r.idCache[idp] == nil {
-			return
-		}
+	// maps are pointers, so for the non-full-replacement-mode, updating this var will update r.idCache
+	ids := r.real.IDCache
 
-		var large, small IDType
-
-		large = r.items[0].GetID()
-		small = r.items[len(r.items)-1].GetID()
-
-		if r.newestIsLargest {
-			large, small = small, large
-		}
-		if idp < small || idp > large {
-			return
-		}
-
-		closest, ok := sort.Find(len(r.items), r.genQueryCMP(idp))
-
-		if !ok && idPointer.ApproximationBehavior == shitdb.APPROXIMATE_OLDEST {
-			closest--
-		}
-
-		i = closest
-	} else if !oldToNew {
-		i = len(r.items) - 1
+	if len(groups) == r.maxLen {
+		ids = make(map[IDType]shitdb.Group[IDType])
 	}
 
-	for {
-		v := r.items[i]
+	for _, g := range groups {
+		ids[g.GetID()] = g
+	}
 
-		ok, early := f.Match(v)
+	if len(groups) == r.maxLen {
+		r.real.IDCache = ids
+		r.real.Items = groups
+		return
+	}
 
-		if ok {
-			action(v, i)
-		}
-		
-		i += d
+	slStart := len(r.real.Items) + len(groups) - r.maxLen
 
-		if early || i == -1 || i == len(r.items) {
-			return
+	if slStart < 0 {
+		slStart = 0
+	}
+
+	if slStart != 0 {
+		for _, g := range r.real.Items[:slStart] {
+			delete(r.real.IDCache, g.GetID())
 		}
 	}
+
+	r.real.Items = append(r.real.Items[slStart:], groups...)
+}
+
+func (r *RingArrayBackend[IDType]) DeleteIDs(inp ...IDType) {
+	r.real.DeleteID(inp...)
+}
+
+func (r *RingArrayBackend[IDType]) ReadIDs(inp ...IDType) []shitdb.Group[IDType] {
+	return r.real.ReadID(inp...)
+}
+
+func (r *RingArrayBackend[IDType]) ReadQuery(idPointer *shitdb.IDPointer[IDType], oldToNew bool, f shitdb.Filter[IDType]) ([]shitdb.Group[IDType], bool) {
+	return r.real.ReadQuery(idPointer, oldToNew, f)
+}
+
+func (r *RingArrayBackend[IDType]) DeleteQuery(idPointer *shitdb.IDPointer[IDType], oldToNew bool, f shitdb.Filter[IDType]) {
+	r.real.DeleteQuery(idPointer, oldToNew, f)
 }

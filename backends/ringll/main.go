@@ -48,7 +48,8 @@ func (r *RingLinkedListBackend[IDType]) delete(id IDType) bool {
 	return true
 }
 
-func (r *RingLinkedListBackend[IDType]) queryFunc(idPointer *shitdb.IDPointer[IDType], oldToNew bool, f shitdb.Filter[IDType], action func(g shitdb.Group[IDType])) {
+// Returns true if exit early due to filter
+func (r *RingLinkedListBackend[IDType]) queryFunc(idPointer *shitdb.IDPointer[IDType], oldToNew bool, f shitdb.Filter[IDType], action func(g shitdb.Group[IDType])) bool {
 	var n *Node[IDType]
 	// Change n to the next value
 	var next nextFunc[IDType]
@@ -63,7 +64,33 @@ func (r *RingLinkedListBackend[IDType]) queryFunc(idPointer *shitdb.IDPointer[ID
 
 	if idPointer != nil && r.newest != r.oldest {
 		idp := r.idCache[idPointer.ID]
-		if idp != nil { 
+		if idp == nil {
+			if idPointer.ApproximationBehavior == shitdb.APPROXIMATE_QUIT_EARLY {
+				return false
+			}
+
+			// TODO: Implement approximation behavior.
+			// id := idPointer.ID
+			// n = r.newest
+			// idpNext := nextNewToOld[IDType]
+	        
+			// if idPointer.Hint == shitdb.LOCATION_HINT_OLDEST {
+			// 	n = r.oldest
+			// 	idpNext = nextOldToNew[IDType]
+			// }
+	
+			// for {
+			// 	if n == nil {
+			// 		// we couldn't find the starting id, so quit early
+			// 		return
+			// 	}
+			// 	if n.Value.GetID() == id {
+			// 		// Gotcha
+			// 		break
+			// 	}
+			// 	n = idpNext(n)
+			// }
+		} else {
 			n = idp
 		}
 	}
@@ -80,9 +107,11 @@ func (r *RingLinkedListBackend[IDType]) queryFunc(idPointer *shitdb.IDPointer[ID
 				action(n.Value)
 			}
 			if exitEarly {
-				return
+				return true
 			}
 		}
 		n = next(n)
 	}
+
+	return false
 }

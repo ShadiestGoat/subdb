@@ -1,7 +1,7 @@
 - [ ] Storage file backend
-- [ ] Cache Backend
-  - [ ] Ring - Array
+- [X] Cache Backend
+  - [x] Ring - Array
   - [x] Ring - Linked List
-  - [ ] "All"
+  - [X] "All"
 - [x] Make common types (string, int, uint)
 - [x] Allow for common types to be ids

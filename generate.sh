@@ -1,0 +1,1 @@
+cat "tpl/$1.yaml" | tpl -f "tpl/$1.tpl" -d yaml -n "$1.tpl" | gofmt -s > "$1.go"

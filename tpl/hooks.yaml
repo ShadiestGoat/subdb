@@ -1,0 +1,25 @@
+- name: Insert
+  args: 
+    - name: 'groups'
+      type: 'Group[IDType]'
+      spread: true
+- name: DeleteID
+  args: &idArgs
+    - name: 'ids'
+      type: IDType
+      spread: true
+- name: DeleteQuery
+  args: &argsQuery
+    - name: idPointer
+      type: "*IDPointer[IDType]"
+    - name: oldToNew
+      type: bool
+    - name: f
+      type: Filter[IDType]
+      spread: false
+- name: Read
+  args: *argsQuery
+  returns: "([]Group[IDType], bool)"
+- name: ReadID
+  args: *idArgs
+  returns: "[]Group[IDType]"
