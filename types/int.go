@@ -2,7 +2,7 @@
 package types
 
 import (
-	"shadygoat.eu/shitdb"
+	"github.com/shadiestgoat/subdb"
 )
 
 type intBase[T int | uint] struct {
@@ -19,7 +19,7 @@ func (i *intBase[T]) Load(v []byte) {
 	i.Value = decodeInt[T](i.Size, v) 
 }
 
-func (i intBase[T]) New() shitdb.Field {
+func (i intBase[T]) New() subdb.Field {
 	return &intBase[T]{
 		Size:  i.Size,
 	}

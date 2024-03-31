@@ -1,6 +1,6 @@
 package types
 
-import "shadygoat.eu/shitdb"
+import "github.com/shadiestgoat/subdb"
 
 type String struct {
 	HelperValue[string]
@@ -18,7 +18,7 @@ func (s *String) Load(v []byte) {
 	s.Value = string(v[s.Size:])
 }
 
-func (s String) New() shitdb.Field {
+func (s String) New() subdb.Field {
 	return &String{
 		Size: s.Size,
 	}

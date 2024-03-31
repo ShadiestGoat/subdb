@@ -4,34 +4,34 @@ import (
 	"slices"
 	"sync"
 
-	"shadygoat.eu/shitdb"
+	subdb "github.com/shadiestgoat/subdb"
 )
 
-type NewArrayFunc[IDType shitdb.IDConstraint] func() []shitdb.Group[IDType]
+type NewArrayFunc[IDType subdb.IDConstraint] func() []subdb.Group[IDType]
 
 // Library util, don't use as a real backend
-type CommonArrayBackendUtil[IDType shitdb.IDConstraint] struct {
+type CommonArrayBackendUtil[IDType subdb.IDConstraint] struct {
 	Lock            *sync.RWMutex
-	Items           []shitdb.Group[IDType]
+	Items           []subdb.Group[IDType]
 	NewestIsLargest bool
-	IDCache         map[IDType]shitdb.Group[IDType]
+	IDCache         map[IDType]subdb.Group[IDType]
 	newArray        NewArrayFunc[IDType]
 }
 
 // Appends the ring's hooks at the end of the current hook list.
-func (r *CommonArrayBackendUtil[IDType]) Register(h *shitdb.Hooks[IDType]) {
+func (r *CommonArrayBackendUtil[IDType]) Register(h *subdb.Hooks[IDType]) {
 	h.DeleteID = append(h.DeleteID, r.DeleteID)
 	h.DeleteQuery = append(h.DeleteQuery, r.DeleteQuery)
 	h.ReadID = append(h.ReadID, r.ReadID)
 	h.Read = append(h.Read, r.ReadQuery)
 }
 
-func NewCommonArrayUtil[IDType shitdb.IDConstraint](newArray NewArrayFunc[IDType], newestIsLargest bool) CommonArrayBackendUtil[IDType] {
+func NewCommonArrayUtil[IDType subdb.IDConstraint](newArray NewArrayFunc[IDType], newestIsLargest bool) CommonArrayBackendUtil[IDType] {
 	return CommonArrayBackendUtil[IDType]{
 		Lock:            &sync.RWMutex{},
 		Items:           newArray(),
 		NewestIsLargest: newestIsLargest,
-		IDCache:         map[IDType]shitdb.Group[IDType]{},
+		IDCache:         map[IDType]subdb.Group[IDType]{},
 		newArray:        newArray,
 	}
 }
@@ -65,11 +65,11 @@ func (r *CommonArrayBackendUtil[IDType]) DeleteID(inp ...IDType) {
 	r.Lock.Unlock()
 }
 
-func (r *CommonArrayBackendUtil[IDType]) ReadID(inp ...IDType) []shitdb.Group[IDType] {
+func (r *CommonArrayBackendUtil[IDType]) ReadID(inp ...IDType) []subdb.Group[IDType] {
 	r.Lock.RLock()
 	defer r.Lock.RUnlock()
 
-	o := make([]shitdb.Group[IDType], 0, len(inp))
+	o := make([]subdb.Group[IDType], 0, len(inp))
 
 	for _, id := range inp {
 		g := r.IDCache[id]
@@ -81,26 +81,26 @@ func (r *CommonArrayBackendUtil[IDType]) ReadID(inp ...IDType) []shitdb.Group[ID
 	return o
 }
 
-func (r *CommonArrayBackendUtil[IDType]) ReadQuery(idPointer *shitdb.IDPointer[IDType], oldToNew bool, f shitdb.Filter[IDType]) ([]shitdb.Group[IDType], bool) {
+func (r *CommonArrayBackendUtil[IDType]) ReadQuery(idPointer *subdb.IDPointer[IDType], oldToNew bool, f subdb.Filter[IDType]) ([]subdb.Group[IDType], bool) {
 	r.Lock.RLock()
 	defer r.Lock.RLock()
 
-	o := []shitdb.Group[IDType]{}
+	o := []subdb.Group[IDType]{}
 
-	exitEarly := r.queryFunc(idPointer, oldToNew, f, func(g shitdb.Group[IDType], _ int) {
+	exitEarly := r.queryFunc(idPointer, oldToNew, f, func(g subdb.Group[IDType], _ int) {
 		o = append(o, g)
 	})
 
 	return o, exitEarly
 }
 
-func (r *CommonArrayBackendUtil[IDType]) DeleteQuery(idPointer *shitdb.IDPointer[IDType], oldToNew bool, f shitdb.Filter[IDType]) {
+func (r *CommonArrayBackendUtil[IDType]) DeleteQuery(idPointer *subdb.IDPointer[IDType], oldToNew bool, f subdb.Filter[IDType]) {
 	r.Lock.Lock()
 	defer r.Lock.Lock()
 
 	badI := []int{}
 
-	r.queryFunc(idPointer, oldToNew, f, func(_ shitdb.Group[IDType], i int) {
+	r.queryFunc(idPointer, oldToNew, f, func(_ subdb.Group[IDType], i int) {
 		badI = append(badI, i)
 	})
 

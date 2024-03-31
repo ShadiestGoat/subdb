@@ -3,17 +3,17 @@ package ringll
 import (
 	"sync"
 
-	"shadygoat.eu/shitdb"
+	subdb "github.com/shadiestgoat/subdb"
 )
 
-type Node[IDType shitdb.IDConstraint] struct {
-	Value      shitdb.Group[IDType]
+type Node[IDType subdb.IDConstraint] struct {
+	Value      subdb.Group[IDType]
 	Next, Prev *Node[IDType]
 }
 
 // A linked list ring backend. Works in a similar way to a regular ring backend, but instead of an array, uses a linked list
 // Comparison table between an array-backend and a linked list ring backend: TODO:
-type RingLinkedListBackend[IDType shitdb.IDConstraint] struct {
+type RingLinkedListBackend[IDType subdb.IDConstraint] struct {
 	idCache map[IDType]*Node[IDType]
 	size    int
 	maxSize int
@@ -50,7 +50,7 @@ func (r *RingLinkedListBackend[IDType]) delete(id IDType) bool {
 }
 
 // Returns true if exit early due to filter
-func (r *RingLinkedListBackend[IDType]) queryFunc(idPointer *shitdb.IDPointer[IDType], oldToNew bool, f shitdb.Filter[IDType], action func(g shitdb.Group[IDType])) bool {
+func (r *RingLinkedListBackend[IDType]) queryFunc(idPointer *subdb.IDPointer[IDType], oldToNew bool, f subdb.Filter[IDType], action func(g subdb.Group[IDType])) bool {
 	if len(r.idCache) == 0 {
 		return false
 	}
@@ -87,14 +87,14 @@ func (r *RingLinkedListBackend[IDType]) queryFunc(idPointer *shitdb.IDPointer[ID
 	if idPointer != nil && r.newest != r.oldest {
 		idp := r.idCache[idPointer.ID]
 		if idp == nil {
-			if idPointer.ApproximationBehavior == shitdb.APPROXIMATE_QUIT_EARLY {
+			if idPointer.ApproximationBehavior == subdb.APPROXIMATE_QUIT_EARLY {
 				return false
 			}
 
 			idpNode := r.newest
 			idpNext := nextNewToOld[IDType]
 	        
-			if idPointer.Hint == shitdb.LOCATION_HINT_OLDEST {
+			if idPointer.Hint == subdb.LOCATION_HINT_OLDEST {
 				idpNode = r.oldest
 				idpNext = nextOldToNew[IDType]
 			}
@@ -122,9 +122,9 @@ func (r *RingLinkedListBackend[IDType]) queryFunc(idPointer *shitdb.IDPointer[ID
 
 			// by this point we definitely, 100% gottem (I think)
 
-			if oldToNew && idPointer.ApproximationBehavior == shitdb.APPROXIMATE_OLDEST {
+			if oldToNew && idPointer.ApproximationBehavior == subdb.APPROXIMATE_OLDEST {
 				idp = idp.Prev
-			} else if !oldToNew && idPointer.ApproximationBehavior == shitdb.APPROXIMATE_NEWEST {
+			} else if !oldToNew && idPointer.ApproximationBehavior == subdb.APPROXIMATE_NEWEST {
 				idp = idp.Next
 			}
 		}

@@ -3,10 +3,10 @@ package lib
 import (
 	"slices"
 
-	"shadygoat.eu/shitdb"
+	subdb "github.com/shadiestgoat/subdb"
 )
 
-func cmpNewIsLarge[IDType shitdb.IDConstraint](g shitdb.Group[IDType], t IDType) int {
+func cmpNewIsLarge[IDType subdb.IDConstraint](g subdb.Group[IDType], t IDType) int {
 	v := g.GetID()
 
 	if t < v {
@@ -20,11 +20,11 @@ func cmpNewIsLarge[IDType shitdb.IDConstraint](g shitdb.Group[IDType], t IDType)
 }
 
 
-func cmpOldIsLarge[IDType shitdb.IDConstraint](g shitdb.Group[IDType], t IDType) int {
+func cmpOldIsLarge[IDType subdb.IDConstraint](g subdb.Group[IDType], t IDType) int {
 	return -cmpNewIsLarge(g, t)
 }
 
-func (r *CommonArrayBackendUtil[IDType]) queryFunc(idPointer *shitdb.IDPointer[IDType], oldToNew bool, f shitdb.Filter[IDType], action func(g shitdb.Group[IDType], i int)) bool {
+func (r *CommonArrayBackendUtil[IDType]) queryFunc(idPointer *subdb.IDPointer[IDType], oldToNew bool, f subdb.Filter[IDType], action func(g subdb.Group[IDType], i int)) bool {
 	var i int
 
 	d := -1
@@ -36,7 +36,7 @@ func (r *CommonArrayBackendUtil[IDType]) queryFunc(idPointer *shitdb.IDPointer[I
 	if idPointer != nil {
 		idp := idPointer.ID
 
-		if idPointer.ApproximationBehavior == shitdb.APPROXIMATE_QUIT_EARLY && r.IDCache[idp] == nil {
+		if idPointer.ApproximationBehavior == subdb.APPROXIMATE_QUIT_EARLY && r.IDCache[idp] == nil {
 			return false
 		}
 
@@ -60,7 +60,7 @@ func (r *CommonArrayBackendUtil[IDType]) queryFunc(idPointer *shitdb.IDPointer[I
 
 		closest, ok := slices.BinarySearchFunc(r.Items, idp, cmpFunc)
 
-		if !ok && idPointer.ApproximationBehavior == shitdb.APPROXIMATE_OLDEST {
+		if !ok && idPointer.ApproximationBehavior == subdb.APPROXIMATE_OLDEST {
 			closest--
 		}
 

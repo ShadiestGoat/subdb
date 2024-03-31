@@ -1,4 +1,4 @@
-module shadygoat.eu/shitdb
+module github.com/shadiestgoat/subdb
 
 go 1.22.1
 

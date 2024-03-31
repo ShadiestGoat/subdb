@@ -1,31 +1,31 @@
 package ring
 
 import (
-	"shadygoat.eu/shitdb"
-	"shadygoat.eu/shitdb/backends/all/lib"
+	subdb "github.com/shadiestgoat/subdb"
+	"github.com/shadiestgoat/subdb/backends/all/lib"
 )
 
-type RingArrayBackend[IDType shitdb.IDConstraint] struct {
+type RingArrayBackend[IDType subdb.IDConstraint] struct {
 	real   lib.CommonArrayBackendUtil[IDType]
 	maxLen int
 }
 
-func NewRingArrayBackend[IDType shitdb.IDConstraint](maxSize int, newestIsLargest bool) RingArrayBackend[IDType] {
+func NewRingArrayBackend[IDType subdb.IDConstraint](maxSize int, newestIsLargest bool) RingArrayBackend[IDType] {
 	return RingArrayBackend[IDType]{
-		real: lib.NewCommonArrayUtil[IDType](func() []shitdb.Group[IDType] {
-			return make([]shitdb.Group[IDType], 0, maxSize)
+		real: lib.NewCommonArrayUtil[IDType](func() []subdb.Group[IDType] {
+			return make([]subdb.Group[IDType], 0, maxSize)
 		}, newestIsLargest),
 		maxLen: maxSize,
 	}
 }
 
 // Appends the ring's hooks at the end of the current hook list.
-func (r *RingArrayBackend[IDType]) Register(h *shitdb.Hooks[IDType]) {
+func (r *RingArrayBackend[IDType]) Register(h *subdb.Hooks[IDType]) {
 	h.Insert = append(h.Insert, r.Insert)
 	r.real.Register(h)
 }
 
-func (r *RingArrayBackend[IDType]) Insert(groups ...shitdb.Group[IDType]) {
+func (r *RingArrayBackend[IDType]) Insert(groups ...subdb.Group[IDType]) {
 	if len(groups) == 0 {
 		return
 	}
@@ -40,7 +40,7 @@ func (r *RingArrayBackend[IDType]) Insert(groups ...shitdb.Group[IDType]) {
 	ids := r.real.IDCache
 
 	if len(groups) == r.maxLen {
-		ids = make(map[IDType]shitdb.Group[IDType])
+		ids = make(map[IDType]subdb.Group[IDType])
 	}
 
 	for _, g := range groups {
@@ -72,14 +72,14 @@ func (r *RingArrayBackend[IDType]) DeleteIDs(inp ...IDType) {
 	r.real.DeleteID(inp...)
 }
 
-func (r *RingArrayBackend[IDType]) ReadIDs(inp ...IDType) []shitdb.Group[IDType] {
+func (r *RingArrayBackend[IDType]) ReadIDs(inp ...IDType) []subdb.Group[IDType] {
 	return r.real.ReadID(inp...)
 }
 
-func (r *RingArrayBackend[IDType]) ReadQuery(idPointer *shitdb.IDPointer[IDType], oldToNew bool, f shitdb.Filter[IDType]) ([]shitdb.Group[IDType], bool) {
+func (r *RingArrayBackend[IDType]) ReadQuery(idPointer *subdb.IDPointer[IDType], oldToNew bool, f subdb.Filter[IDType]) ([]subdb.Group[IDType], bool) {
 	return r.real.ReadQuery(idPointer, oldToNew, f)
 }
 
-func (r *RingArrayBackend[IDType]) DeleteQuery(idPointer *shitdb.IDPointer[IDType], oldToNew bool, f shitdb.Filter[IDType]) {
+func (r *RingArrayBackend[IDType]) DeleteQuery(idPointer *subdb.IDPointer[IDType], oldToNew bool, f subdb.Filter[IDType]) {
 	r.real.DeleteQuery(idPointer, oldToNew, f)
 }

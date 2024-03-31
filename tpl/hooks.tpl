@@ -1,4 +1,4 @@
-package shitdb
+package subdb
 
 import "sync"
 
