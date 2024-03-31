@@ -60,12 +60,24 @@ type Hooks[IDType IDConstraint] struct {
 func (h *Hooks[IDType]) DoReadID(ids ...IDType) []Group[IDType] {
 	o := []Group[IDType]{}
 
+	idMap := map[IDType]bool{}
+
+	for _, id := range ids {
+		idMap[id] = true
+	}
+
 	for _, f := range h.ReadID {
 		buff := f(ids...)
 		o = append(o, buff...)
 
-		if len(o) == len(ids) {
+		if len(idMap) == 0 {
 			break
+		}
+
+		ids = make([]IDType, 0, len(idMap))
+
+		for id := range idMap {
+			ids = append(ids, id)
 		}
 	}
 
