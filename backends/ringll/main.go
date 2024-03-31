@@ -17,6 +17,7 @@ type RingLinkedListBackend[IDType shitdb.IDConstraint] struct {
 	idCache map[IDType]*Node[IDType]
 	size    int
 	maxSize int
+	newestIsLargest bool
 	lock    *sync.RWMutex
 
 	newest, oldest *Node[IDType]
@@ -50,6 +51,27 @@ func (r *RingLinkedListBackend[IDType]) delete(id IDType) bool {
 
 // Returns true if exit early due to filter
 func (r *RingLinkedListBackend[IDType]) queryFunc(idPointer *shitdb.IDPointer[IDType], oldToNew bool, f shitdb.Filter[IDType], action func(g shitdb.Group[IDType])) bool {
+	if len(r.idCache) == 0 {
+		return false
+	}
+
+	var idpID IDType
+
+	if idPointer != nil {
+		idpID = idPointer.ID
+		
+		largest, smallest := r.oldest.Value.GetID(), r.newest.Value.GetID()
+
+		if r.newestIsLargest {
+			largest, smallest = smallest, largest
+		}
+
+		if idpID > largest || idpID < smallest {
+			// idp is outside of this cache.
+			return false
+		}
+	}
+
 	var n *Node[IDType]
 	// Change n to the next value
 	var next nextFunc[IDType]
@@ -69,30 +91,50 @@ func (r *RingLinkedListBackend[IDType]) queryFunc(idPointer *shitdb.IDPointer[ID
 				return false
 			}
 
-			// TODO: Implement approximation behavior.
-			// id := idPointer.ID
-			// n = r.newest
-			// idpNext := nextNewToOld[IDType]
+			idpNode := r.newest
+			idpNext := nextNewToOld[IDType]
 	        
-			// if idPointer.Hint == shitdb.LOCATION_HINT_OLDEST {
-			// 	n = r.oldest
-			// 	idpNext = nextOldToNew[IDType]
-			// }
+			if idPointer.Hint == shitdb.LOCATION_HINT_OLDEST {
+				idpNode = r.oldest
+				idpNext = nextOldToNew[IDType]
+			}
+			
+			// xor, lmao
+			nLtIDP := (r.newestIsLargest || oldToNew) && !(r.newestIsLargest && oldToNew)
 	
-			// for {
-			// 	if n == nil {
-			// 		// we couldn't find the starting id, so quit early
-			// 		return
-			// 	}
-			// 	if n.Value.GetID() == id {
-			// 		// Gotcha
-			// 		break
-			// 	}
-			// 	n = idpNext(n)
-			// }
-		} else {
-			n = idp
+			for {
+				if idpNode == nil {
+					// we couldn't find the starting id, so quit early
+					// Its not a filter quit early, so return false.
+					return false
+				}
+
+				idpNodeID := idpNode.Value.GetID()
+				
+				if (nLtIDP && idpNodeID < idpID) || (!nLtIDP && idpNodeID > idpID) {
+					idp = idpNode
+					break
+				}
+
+				// Basically what were looking for is a value thats either larger
+				idpNode = idpNext(idpNode)
+			}
+
+			// by this point we definitely, 100% gottem (I think)
+
+			if oldToNew && idPointer.ApproximationBehavior == shitdb.APPROXIMATE_OLDEST {
+				idp = idp.Prev
+			} else if !oldToNew && idPointer.ApproximationBehavior == shitdb.APPROXIMATE_NEWEST {
+				idp = idp.Next
+			}
 		}
+		
+		// This is basically a sanity check. It should always be false, but best make sure I guess?
+		if idp == nil {
+			return false
+		}
+
+		n = idp
 	}
 
 	for {
