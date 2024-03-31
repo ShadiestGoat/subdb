@@ -1,39 +1,27 @@
 package lib
 
 import (
-	"sort"
+	"slices"
 
 	"shadygoat.eu/shitdb"
 )
 
-func (r *CommonArrayBackendUtil[IDType]) genQueryCMP(t IDType) func(int) int {
-	if r.NewestIsLargest {
-		return func(i int) int {
-			v := r.Items[i].GetID()
+func cmpNewIsLarge[IDType shitdb.IDConstraint](g shitdb.Group[IDType], t IDType) int {
+	v := g.GetID()
 
-			if t < v {
-				return -1
-			}
-			if t == v {
-				return 0
-			}
-
-			return 1
-		}
-	}
-
-	return func(i int) int {
-		v := r.Items[i].GetID()
-
-		if t > v {
-			return -1
-		}
-		if t == v {
-			return 0
-		}
-
+	if t < v {
 		return 1
 	}
+	if t == v {
+		return 0
+	}
+
+	return -1
+}
+
+
+func cmpOldIsLarge[IDType shitdb.IDConstraint](g shitdb.Group[IDType], t IDType) int {
+	return -cmpNewIsLarge(g, t)
 }
 
 func (r *CommonArrayBackendUtil[IDType]) queryFunc(idPointer *shitdb.IDPointer[IDType], oldToNew bool, f shitdb.Filter[IDType], action func(g shitdb.Group[IDType], i int)) bool {
@@ -64,7 +52,13 @@ func (r *CommonArrayBackendUtil[IDType]) queryFunc(idPointer *shitdb.IDPointer[I
 			return false
 		}
 
-		closest, ok := sort.Find(len(r.Items), r.genQueryCMP(idp))
+		cmpFunc := cmpOldIsLarge[IDType]
+
+		if r.NewestIsLargest {
+			cmpFunc = cmpNewIsLarge
+		}
+
+		closest, ok := slices.BinarySearchFunc(r.Items, idp, cmpFunc)
 
 		if !ok && idPointer.ApproximationBehavior == shitdb.APPROXIMATE_OLDEST {
 			closest--
