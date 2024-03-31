@@ -4,7 +4,7 @@ import (
 	"slices"
 	"sync"
 
-	subdb "github.com/shadiestgoat/subdb"
+	"github.com/shadiestgoat/subdb"
 )
 
 type NewArrayFunc[IDType subdb.IDConstraint] func() []subdb.Group[IDType]

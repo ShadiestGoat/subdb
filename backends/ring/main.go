@@ -1,7 +1,7 @@
 package ring
 
 import (
-	subdb "github.com/shadiestgoat/subdb"
+	"github.com/shadiestgoat/subdb"
 	"github.com/shadiestgoat/subdb/backends/all/lib"
 )
 

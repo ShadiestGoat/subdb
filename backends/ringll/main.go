@@ -3,7 +3,7 @@ package ringll
 import (
 	"sync"
 
-	subdb "github.com/shadiestgoat/subdb"
+	"github.com/shadiestgoat/subdb"
 )
 
 type Node[IDType subdb.IDConstraint] struct {

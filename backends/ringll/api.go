@@ -3,7 +3,7 @@ package ringll
 import (
 	"sync"
 
-	subdb "github.com/shadiestgoat/subdb"
+	"github.com/shadiestgoat/subdb"
 )
 
 // Creates a new linked list ring backend

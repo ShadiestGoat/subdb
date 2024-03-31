@@ -3,7 +3,7 @@ package lib
 import (
 	"slices"
 
-	subdb "github.com/shadiestgoat/subdb"
+	"github.com/shadiestgoat/subdb"
 )
 
 func cmpNewIsLarge[IDType subdb.IDConstraint](g subdb.Group[IDType], t IDType) int {
