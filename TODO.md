@@ -1,4 +1,7 @@
 - [ ] Storage file backend
+  - [ ] Start/Stop hook
+  - [ ] Periodic flushing
+- [ ] Unexpose IntBase, provide New(U)int
 - [X] Cache Backend
   - [x] Ring - Array
   - [x] Ring - Linked List

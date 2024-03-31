@@ -24,6 +24,20 @@ import "sync"
 type {{ .name }}Func[IDType IDConstraint] func({{ include "args" (dict "t" "defArgs" "v" .args) }}){{ empty .returns | ternary "" (print " " .returns) }}
 {{ end }}
 
+{{ range . -}}
+type BackendWith{{ .name }}Func[IDType IDConstraint] interface {
+	{{ .name }}({{ include "args" (dict "t" "defArgs" "v" .args) }}){{ empty .returns | ternary "" (print " " .returns) }}
+}
+{{ end }}
+
+type BackendWithEverything[IDType IDConstraint] interface {
+	BackendWithInsertFunc[IDType]
+	BackendWithDeleteIDFunc[IDType]
+	BackendWithDeleteQueryFunc[IDType]
+	BackendWithReadFunc[IDType]
+	BackendWithReadIDFunc[IDType]
+}
+
 type Hooks[IDType IDConstraint] struct {
 {{- range . }}
 	{{ .name }}	[]{{ .name }}Func[IDType]
@@ -51,57 +65,17 @@ type Hooks[IDType IDConstraint] struct {
 	}
 {{ end -}}
 
+{{- define "syncFunc" }}
+	func (h *Hooks[IDType]) Do{{ .name }}({{ include "args" (dict "t" "defArgs" "v" .args) }}){{ empty .returns | ternary "" (print " " .returns) }} {
+		return Hooks{{ .name }}(h.{{ .name }}, {{ include "args" (dict "t" "inpArgs" "v" .args) }})
+	}
+{{ end -}}
+
 {{ range . }}
-{{- if (empty .returns) -}}
-{{- include "asyncFunc" . | indent 0 -}}
-{{- end -}}
+	{{- $fType := "syncFunc" -}}
+	{{- if (empty .returns) -}}
+		{{- $fType = "asyncFunc" -}}
+	{{- end -}}
+
+	{{- include $fType . | indent 0 -}}
 {{- end }}
-
-func (h *Hooks[IDType]) DoReadID(ids ...IDType) []Group[IDType] {
-	o := []Group[IDType]{}
-
-	idMap := map[IDType]bool{}
-
-	for _, id := range ids {
-		idMap[id] = true
-	}
-
-	for _, f := range h.ReadID {
-		buff := f(ids...)
-		o = append(o, buff...)
-
-		if len(idMap) == 0 {
-			break
-		}
-
-		ids = make([]IDType, 0, len(idMap))
-
-		for id := range idMap {
-			ids = append(ids, id)
-		}
-	}
-
-	return o
-}
-
-func (h *Hooks[IDType]) DoRead(idPointer *IDPointer[IDType], oldToNew bool, f Filter[IDType]) ([]Group[IDType], bool) {
-	o := []Group[IDType]{}
-	cutFirst := 0
-
-	for _, h := range h.Read {
-		buf, exitEarly := h(idPointer, oldToNew, f)
-		o = append(o, buf[cutFirst:]...)
-		if exitEarly {
-			return o, true
-		}
-		if len(buf) != 0 {
-			idPointer = &IDPointer[IDType]{
-				ID:   buf[len(buf)-1].GetID(),
-				ApproximationBehavior: APPROXIMATE_NEWEST,
-			}
-			cutFirst = 1
-		}
-	}
-
-	return o, false
-}

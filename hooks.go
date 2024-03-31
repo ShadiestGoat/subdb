@@ -10,6 +10,30 @@ type DeleteQueryFunc[IDType IDConstraint] func(idPointer *IDPointer[IDType], old
 type ReadFunc[IDType IDConstraint] func(idPointer *IDPointer[IDType], oldToNew bool, f Filter[IDType]) ([]Group[IDType], bool)
 type ReadIDFunc[IDType IDConstraint] func(ids ...IDType) []Group[IDType]
 
+type BackendWithInsertFunc[IDType IDConstraint] interface {
+	Insert(groups ...Group[IDType])
+}
+type BackendWithDeleteIDFunc[IDType IDConstraint] interface {
+	DeleteID(ids ...IDType)
+}
+type BackendWithDeleteQueryFunc[IDType IDConstraint] interface {
+	DeleteQuery(idPointer *IDPointer[IDType], oldToNew bool, f Filter[IDType])
+}
+type BackendWithReadFunc[IDType IDConstraint] interface {
+	Read(idPointer *IDPointer[IDType], oldToNew bool, f Filter[IDType]) ([]Group[IDType], bool)
+}
+type BackendWithReadIDFunc[IDType IDConstraint] interface {
+	ReadID(ids ...IDType) []Group[IDType]
+}
+
+type BackendWithEverything[IDType IDConstraint] interface {
+	BackendWithInsertFunc[IDType]
+	BackendWithDeleteIDFunc[IDType]
+	BackendWithDeleteQueryFunc[IDType]
+	BackendWithReadFunc[IDType]
+	BackendWithReadIDFunc[IDType]
+}
+
 type Hooks[IDType IDConstraint] struct {
 	Insert      []InsertFunc[IDType]
 	DeleteID    []DeleteIDFunc[IDType]
@@ -75,51 +99,10 @@ func (h *Hooks[IDType]) DoDeleteQuery(cb chan bool, idPointer *IDPointer[IDType]
 	}
 }
 
-func (h *Hooks[IDType]) DoReadID(ids ...IDType) []Group[IDType] {
-	o := []Group[IDType]{}
-
-	idMap := map[IDType]bool{}
-
-	for _, id := range ids {
-		idMap[id] = true
-	}
-
-	for _, f := range h.ReadID {
-		buff := f(ids...)
-		o = append(o, buff...)
-
-		if len(idMap) == 0 {
-			break
-		}
-
-		ids = make([]IDType, 0, len(idMap))
-
-		for id := range idMap {
-			ids = append(ids, id)
-		}
-	}
-
-	return o
+func (h *Hooks[IDType]) DoRead(idPointer *IDPointer[IDType], oldToNew bool, f Filter[IDType]) ([]Group[IDType], bool) {
+	return HooksRead(h.Read, idPointer, oldToNew, f)
 }
 
-func (h *Hooks[IDType]) DoRead(idPointer *IDPointer[IDType], oldToNew bool, f Filter[IDType]) ([]Group[IDType], bool) {
-	o := []Group[IDType]{}
-	cutFirst := 0
-
-	for _, h := range h.Read {
-		buf, exitEarly := h(idPointer, oldToNew, f)
-		o = append(o, buf[cutFirst:]...)
-		if exitEarly {
-			return o, true
-		}
-		if len(buf) != 0 {
-			idPointer = &IDPointer[IDType]{
-				ID:                    buf[len(buf)-1].GetID(),
-				ApproximationBehavior: APPROXIMATE_NEWEST,
-			}
-			cutFirst = 1
-		}
-	}
-
-	return o, false
+func (h *Hooks[IDType]) DoReadID(ids ...IDType) []Group[IDType] {
+	return HooksReadID(h.ReadID, ids...)
 }

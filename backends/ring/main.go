@@ -81,5 +81,5 @@ func (r *RingArrayBackend[IDType]) ReadQuery(idPointer *subdb.IDPointer[IDType],
 }
 
 func (r *RingArrayBackend[IDType]) DeleteQuery(idPointer *subdb.IDPointer[IDType], oldToNew bool, f subdb.Filter[IDType]) {
-	r.real.DeleteQuery(idPointer, oldToNew, f)
+	r.real.Delete(idPointer, oldToNew, f)
 }

@@ -21,7 +21,7 @@ type CommonArrayBackendUtil[IDType subdb.IDConstraint] struct {
 // Appends the ring's hooks at the end of the current hook list.
 func (r *CommonArrayBackendUtil[IDType]) Register(h *subdb.Hooks[IDType]) {
 	h.DeleteID = append(h.DeleteID, r.DeleteID)
-	h.DeleteQuery = append(h.DeleteQuery, r.DeleteQuery)
+	h.DeleteQuery = append(h.DeleteQuery, r.Delete)
 	h.ReadID = append(h.ReadID, r.ReadID)
 	h.Read = append(h.Read, r.ReadQuery)
 }
@@ -36,7 +36,8 @@ func NewCommonArrayUtil[IDType subdb.IDConstraint](newArray NewArrayFunc[IDType]
 	}
 }
 
-func (r *CommonArrayBackendUtil[IDType]) DeleteID(inp ...IDType) {
+// Deletes IDs & returns a list of deleted IDs
+func (r *CommonArrayBackendUtil[IDType]) UtilDeleteIDs(inp ...IDType) []IDType {
 	ids := make(map[IDType]bool, len(inp))
 
 	r.Lock.RLock()
@@ -50,6 +51,7 @@ func (r *CommonArrayBackendUtil[IDType]) DeleteID(inp ...IDType) {
 	r.Lock.Lock()
 
 	newItems := r.newArray()
+	deletedIDs := make([]IDType, 0, len(inp))
 
 	for _, g := range r.Items {
 		id := g.GetID()
@@ -57,12 +59,19 @@ func (r *CommonArrayBackendUtil[IDType]) DeleteID(inp ...IDType) {
 			newItems = append(newItems, g)
 		} else {
 			delete(r.IDCache, id)
+			deletedIDs = append(deletedIDs, id)
 		}
 	}
 
 	r.Items = newItems
 
 	r.Lock.Unlock()
+
+	return deletedIDs
+}
+
+func (r *CommonArrayBackendUtil[IDType]) DeleteID(inp ...IDType) {
+	r.UtilDeleteIDs(inp...)
 }
 
 func (r *CommonArrayBackendUtil[IDType]) ReadID(inp ...IDType) []subdb.Group[IDType] {
@@ -94,14 +103,17 @@ func (r *CommonArrayBackendUtil[IDType]) ReadQuery(idPointer *subdb.IDPointer[ID
 	return o, exitEarly
 }
 
-func (r *CommonArrayBackendUtil[IDType]) DeleteQuery(idPointer *subdb.IDPointer[IDType], oldToNew bool, f subdb.Filter[IDType]) {
+func (r *CommonArrayBackendUtil[IDType]) UtilDeleteQuery(idPointer *subdb.IDPointer[IDType], oldToNew bool, f subdb.Filter[IDType]) (subdb.Group[IDType], bool) {
 	r.Lock.Lock()
 	defer r.Lock.Lock()
 
 	badI := []int{}
 
-	r.queryFunc(idPointer, oldToNew, f, func(_ subdb.Group[IDType], i int) {
+	var lastG subdb.Group[IDType]
+
+	exitEarly := r.queryFunc(idPointer, oldToNew, f, func(g subdb.Group[IDType], i int) {
 		badI = append(badI, i)
+		lastG = g
 	})
 
 	newItems := r.newArray()
@@ -117,4 +129,10 @@ func (r *CommonArrayBackendUtil[IDType]) DeleteQuery(idPointer *subdb.IDPointer[
 	}
 
 	r.Items = append(newItems, r.Items[lastI:]...)
+
+	return lastG, exitEarly
+}
+
+func (r *CommonArrayBackendUtil[IDType]) Delete(idPointer *subdb.IDPointer[IDType], oldToNew bool, f subdb.Filter[IDType]) {
+	r.UtilDeleteQuery(idPointer, oldToNew, f)
 }

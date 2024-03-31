@@ -35,20 +35,30 @@ func (r *AllBackend[IDType]) Insert(groups ...subdb.Group[IDType]) {
 	r.real.Items = append(r.real.Items, groups...)
 }
 
-func (r *AllBackend[IDType]) DeleteIDs(inp ...IDType) {
+func (r *AllBackend[IDType]) DeleteID(inp ...IDType) {
 	r.real.DeleteID(inp...)
 }
 
-func (r *AllBackend[IDType]) ReadIDs(inp ...IDType) []subdb.Group[IDType] {
+// Deletes IDs & returns which IDs it deleted.
+func (r *AllBackend[IDType]) UtilDeleteIDs(inp ...IDType) []IDType {
+	return r.real.UtilDeleteIDs(inp...)
+}
+
+func (r *AllBackend[IDType]) ReadID(inp ...IDType) []subdb.Group[IDType] {
 	return r.real.ReadID(inp...)
 }
 
-func (r *AllBackend[IDType]) ReadQuery(idPointer *subdb.IDPointer[IDType], oldToNew bool, f subdb.Filter[IDType]) ([]subdb.Group[IDType], bool) {
+func (r *AllBackend[IDType]) Read(idPointer *subdb.IDPointer[IDType], oldToNew bool, f subdb.Filter[IDType]) ([]subdb.Group[IDType], bool) {
 	return r.real.ReadQuery(idPointer, oldToNew, f)
 }
 
-func (r *AllBackend[IDType]) DeleteQuery(idPointer *subdb.IDPointer[IDType], oldToNew bool, f subdb.Filter[IDType]) {
-	r.real.DeleteQuery(idPointer, oldToNew, f)
+func (r *AllBackend[IDType]) Delete(idPointer *subdb.IDPointer[IDType], oldToNew bool, f subdb.Filter[IDType]) {
+	r.real.Delete(idPointer, oldToNew, f)
+}
+
+// Deletes IDs & returns which IDs it deleted.
+func (r *AllBackend[IDType]) UtilDelete(idPointer *subdb.IDPointer[IDType], oldToNew bool, f subdb.Filter[IDType]) (subdb.Group[IDType], bool) {
+	return r.real.UtilDeleteQuery(idPointer, oldToNew, f)
 }
 
 // Resets all the items & returns them

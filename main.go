@@ -29,6 +29,7 @@ type Group[IDType IDConstraint] interface {
 	GetID() IDType
 	Load([]Field)
 	Store() []Field
+	New() Group[IDType]
 }
 
 type Filter[IDType IDConstraint] interface {
