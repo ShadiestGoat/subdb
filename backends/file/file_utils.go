@@ -8,11 +8,7 @@ import (
 )
 
 func (r *RealFile[IDType]) parseGrpSize(grpSizeRaw []byte) int64 {
-	sizeCol := &types.Uint{
-		IntBase: types.IntBase[uint]{
-			Size: r.groupSizeSize,
-		},
-	}
+	sizeCol := types.NewUint(0, r.groupSizeSize)
 	sizeCol.Load(grpSizeRaw)
 	return int64(sizeCol.Value)
 }

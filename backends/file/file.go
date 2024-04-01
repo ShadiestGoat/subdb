@@ -123,14 +123,7 @@ func (r *RealFile[IDType]) Insert(inp ...subdb.Group[IDType]) {
 			gBuff = append(gBuff, f.Encode()...)
 		}
 
-		sCol := &types.Uint{
-			IntBase: types.IntBase[uint]{
-				HelperValue: types.HelperValue[uint]{
-					Value: uint(len(gBuff)),
-				},
-				Size: r.groupSizeSize,
-			},
-		}
+		sCol := types.NewUint(uint(len(gBuff)), r.groupSizeSize)
 		sizeBuff := sCol.Encode()
 
 		gBuff = append(sizeBuff, gBuff...)

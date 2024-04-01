@@ -6,34 +6,55 @@ import (
 )
 
 // Util for int-based fields (uint & int)
-type IntBase[T int | uint] struct {
+type intBase[T int | uint] struct {
 	HelperValue[T]
 	// The size of the int in bytes. Valid values are 2 (uint16), 4 (uint32), 8 (uint64)
 	Size int
 }
 
-func (i IntBase[T]) Encode() []byte {
+func (i intBase[T]) Encode() []byte {
 	return encodeInt[T](i.Value, i.Size)
 }
 
-func (i *IntBase[T]) Load(v []byte) {
+func (i *intBase[T]) Load(v []byte) {
 	i.Value = decodeInt[T](i.Size, v) 
 }
 
-func (i IntBase[T]) New() subdb.Field {
-	return &IntBase[T]{
+func (i intBase[T]) New() subdb.Field {
+	return &intBase[T]{
 		Size:  i.Size,
 	}
 }
 
-func (i IntBase[T]) StaticSize() int {
+func (i intBase[T]) StaticSize() int {
 	return i.Size
 }
 
 type Int struct {
-	IntBase[int]
+	intBase[int]
 }
 
 type Uint struct {
-	IntBase[uint]
+	intBase[uint]
+}
+
+func newIntBase[T int | uint](v T, size int) intBase[T] {
+	return intBase[T]{
+		HelperValue: HelperValue[T]{
+			Value: v,
+		},
+		Size: size,
+	}
+}
+
+func NewUint(v uint, size int) *Uint {
+	return &Uint{
+		intBase: newIntBase(v, size),
+	}
+}
+
+func NewInt(v int, size int) *Int {
+	return &Int{
+		intBase: newIntBase(v, size),
+	}
 }
