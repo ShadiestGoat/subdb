@@ -1,10 +1,28 @@
 - [ ] Storage file backend
   - [ ] Start/Stop hook
   - [ ] Periodic flushing
-- [x] Unexpose IntBase, provide New(U)int
-- [X] Cache Backend
-  - [x] Ring - Array
-  - [x] Ring - Linked List
-  - [X] "All"
-- [x] Make common types (string, int, uint)
-- [x] Allow for common types to be ids
+- [ ] Write tests for specific backends
+  - [ ] All
+    - [ ] Insert
+    - [ ] Delete
+    - [ ] DeleteID
+    - [ ] Read
+    - [ ] ReadID
+  - [ ] File (io only, flush is handled by All)
+    - [ ] Insert
+    - [ ] Delete
+    - [ ] DeleteID
+    - [ ] Read
+    - [ ] ReadID
+  - [ ] Ring - Array
+    - [x] Insert
+    - [ ] Delete
+    - [ ] DeleteID
+    - [ ] Read
+    - [ ] ReadID
+  - [ ] Ring - Linked List
+    - [ ] Insert
+    - [ ] Delete
+    - [ ] DeleteID
+    - [ ] Read
+    - [ ] ReadID
