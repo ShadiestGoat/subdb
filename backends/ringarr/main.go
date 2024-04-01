@@ -1,4 +1,4 @@
-package ring
+package ringarr
 
 import (
 	"github.com/shadiestgoat/subdb"
@@ -12,7 +12,7 @@ type RingArrayBackend[IDType subdb.IDConstraint] struct {
 
 func NewRingArrayBackend[IDType subdb.IDConstraint](maxSize int, newestIsLargest bool) RingArrayBackend[IDType] {
 	return RingArrayBackend[IDType]{
-		real: lib.NewCommonArrayUtil[IDType](func() []subdb.Group[IDType] {
+		real: lib.NewCommonArrayUtil(func() []subdb.Group[IDType] {
 			return make([]subdb.Group[IDType], 0, maxSize)
 		}, newestIsLargest),
 		maxLen: maxSize,
@@ -82,4 +82,21 @@ func (r *RingArrayBackend[IDType]) ReadQuery(idPointer *subdb.IDPointer[IDType],
 
 func (r *RingArrayBackend[IDType]) DeleteQuery(idPointer *subdb.IDPointer[IDType], oldToNew bool, f subdb.Filter[IDType]) {
 	r.real.Delete(idPointer, oldToNew, f)
+}
+
+// Shows a copy of all data. Note that the array & map are copied, the data itself is the same instance. Shouldn't be used in practice.
+func (r *RingArrayBackend[IDType]) Dump() ([]subdb.Group[IDType], map[IDType]subdb.Group[IDType]) {
+	r.real.Lock.RLock()
+	defer r.real.Lock.RUnlock()
+
+	d := make([]subdb.Group[IDType], len(r.real.Items))
+	c := make(map[IDType]subdb.Group[IDType], len(r.real.IDCache))
+
+	copy(d, r.real.Items)
+
+	for id, v := range r.real.IDCache {
+		c[id] = v
+	}
+
+	return d, c
 }
