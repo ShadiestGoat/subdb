@@ -31,11 +31,9 @@ type BackendWith{{ .name }}Func[IDType IDConstraint] interface {
 {{ end }}
 
 type BackendWithEverything[IDType IDConstraint] interface {
-	BackendWithInsertFunc[IDType]
-	BackendWithDeleteIDFunc[IDType]
-	BackendWithDeleteQueryFunc[IDType]
-	BackendWithReadFunc[IDType]
-	BackendWithReadIDFunc[IDType]
+{{ range . -}}
+	BackendWith{{ .name }}Func[IDType]
+{{ end }}
 }
 
 type Hooks[IDType IDConstraint] struct {
