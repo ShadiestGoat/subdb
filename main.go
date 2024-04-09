@@ -35,6 +35,8 @@ type Group[IDType IDConstraint] interface {
 type Filter[IDType IDConstraint] interface {
 	// Return true if matches
 	Match(g Group[IDType]) (ok bool, returnEarly bool)
+	// Must copy its current state into a new value
+	Copy() Filter[IDType]
 }
 
 type LocationHint int

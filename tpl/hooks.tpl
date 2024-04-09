@@ -46,10 +46,20 @@ type Hooks[IDType IDConstraint] struct {
 	func (h *Hooks[IDType]) Do{{ .name }}(cb chan bool, {{ include "args" (dict "t" "defArgs" "v" .args) }}) {
 		l := &sync.WaitGroup{}
 		l.Add(len(h.{{ .name }}))
+		{{ $async := default (dict) .async }}
+		{{ default "" $async.extraLogic }}
+		{{ $args := .args }}
 
-		for _, h := range h.{{ .name }} {
+		{{ range $tpmI, $v := (default (dict) $async.argOverride) }}
+			{{ $i := int $tpmI }}
+			{{ $newV := deepCopy (index $args $i) }}
+			{{ $_ := set $newV "name" $v }}
+			{{ $args = concat (slice $args 0 $i) (list $newV) (slice $args (add $i 1)) }}
+		{{ end }}
+
+		for {{ default "_" $async.iVar }}, h := range h.{{ .name }} {
 			go func () {
-				h({{ include "args" (dict "t" "inpArgs" "v" .args)}})
+				h({{ include "args" (dict "t" "inpArgs" "v" $args)}})
 				l.Done()
 			}()
 		}

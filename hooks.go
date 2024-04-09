@@ -6,7 +6,7 @@ import "sync"
 
 type InsertFunc[IDType IDConstraint] func(groups ...Group[IDType])
 type DeleteIDFunc[IDType IDConstraint] func(ids ...IDType)
-type DeleteQueryFunc[IDType IDConstraint] func(idPointer *IDPointer[IDType], oldToNew bool, f Filter[IDType])
+type DeleteFunc[IDType IDConstraint] func(idPointer *IDPointer[IDType], oldToNew bool, f Filter[IDType])
 type ReadFunc[IDType IDConstraint] func(idPointer *IDPointer[IDType], oldToNew bool, f Filter[IDType]) ([]Group[IDType], bool)
 type ReadIDFunc[IDType IDConstraint] func(ids ...IDType) []Group[IDType]
 
@@ -16,8 +16,8 @@ type BackendWithInsertFunc[IDType IDConstraint] interface {
 type BackendWithDeleteIDFunc[IDType IDConstraint] interface {
 	DeleteID(ids ...IDType)
 }
-type BackendWithDeleteQueryFunc[IDType IDConstraint] interface {
-	DeleteQuery(idPointer *IDPointer[IDType], oldToNew bool, f Filter[IDType])
+type BackendWithDeleteFunc[IDType IDConstraint] interface {
+	Delete(idPointer *IDPointer[IDType], oldToNew bool, f Filter[IDType])
 }
 type BackendWithReadFunc[IDType IDConstraint] interface {
 	Read(idPointer *IDPointer[IDType], oldToNew bool, f Filter[IDType]) ([]Group[IDType], bool)
@@ -29,17 +29,17 @@ type BackendWithReadIDFunc[IDType IDConstraint] interface {
 type BackendWithEverything[IDType IDConstraint] interface {
 	BackendWithInsertFunc[IDType]
 	BackendWithDeleteIDFunc[IDType]
-	BackendWithDeleteQueryFunc[IDType]
+	BackendWithDeleteFunc[IDType]
 	BackendWithReadFunc[IDType]
 	BackendWithReadIDFunc[IDType]
 }
 
 type Hooks[IDType IDConstraint] struct {
-	Insert      []InsertFunc[IDType]
-	DeleteID    []DeleteIDFunc[IDType]
-	DeleteQuery []DeleteQueryFunc[IDType]
-	Read        []ReadFunc[IDType]
-	ReadID      []ReadIDFunc[IDType]
+	Insert   []InsertFunc[IDType]
+	DeleteID []DeleteIDFunc[IDType]
+	Delete   []DeleteFunc[IDType]
+	Read     []ReadFunc[IDType]
+	ReadID   []ReadIDFunc[IDType]
 }
 
 func (h *Hooks[IDType]) DoInsert(cb chan bool, groups ...Group[IDType]) {
@@ -80,13 +80,18 @@ func (h *Hooks[IDType]) DoDeleteID(cb chan bool, ids ...IDType) {
 	}
 }
 
-func (h *Hooks[IDType]) DoDeleteQuery(cb chan bool, idPointer *IDPointer[IDType], oldToNew bool, f Filter[IDType]) {
+func (h *Hooks[IDType]) DoDelete(cb chan bool, idPointer *IDPointer[IDType], oldToNew bool, f Filter[IDType]) {
 	l := &sync.WaitGroup{}
-	l.Add(len(h.DeleteQuery))
+	l.Add(len(h.Delete))
 
-	for _, h := range h.DeleteQuery {
+	filters := make([]Filter[IDType], len(h.Delete))
+	for i := range filters {
+		filters[i] = f.Copy()
+	}
+
+	for i, h := range h.Delete {
 		go func() {
-			h(idPointer, oldToNew, f)
+			h(idPointer, oldToNew, filters[i])
 			l.Done()
 		}()
 	}

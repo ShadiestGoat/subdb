@@ -8,7 +8,17 @@
     - name: 'ids'
       type: IDType
       spread: true
-- name: DeleteQuery
+- name: Delete
+  async:
+    iVar: i
+    extraLogic: |-
+      filters := make([]Filter[IDType], len(h.Delete))
+      for i := range filters {
+        filters[i] = f.Copy()
+      }
+    argOverride:
+      2:
+        filters[i]
   args: &argsQuery
     - name: idPointer
       type: "*IDPointer[IDType]"
