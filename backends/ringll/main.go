@@ -100,7 +100,7 @@ func (r *RingLinkedListBackend[IDType]) queryFunc(idPointer *subdb.IDPointer[IDT
 			}
 			
 			// xor, lmao
-			nLtIDP := (r.newestIsLargest || oldToNew) && !(r.newestIsLargest && oldToNew)
+			nLtIDP := r.newestIsLargest != oldToNew
 	
 			for {
 				if idpNode == nil {
@@ -111,7 +111,7 @@ func (r *RingLinkedListBackend[IDType]) queryFunc(idPointer *subdb.IDPointer[IDT
 
 				idpNodeID := idpNode.Value.GetID()
 				
-				if (nLtIDP && idpNodeID < idpID) || (!nLtIDP && idpNodeID > idpID) {
+				if nLtIDP != (idpNodeID < idpID) {
 					idp = idpNode
 					break
 				}

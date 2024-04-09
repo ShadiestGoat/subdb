@@ -118,7 +118,7 @@ func (r *RealFile[IDType]) findIDP(idp *subdb.IDPointer[IDType]) (int64, bool) {
 	offset := int64(0)
 	found := false
 
-	nLtIDP := (r.newestIsLargest || oldToNew) && !(r.newestIsLargest && oldToNew)
+	nLtIDP := r.newestIsLargest != oldToNew
 
 	needToReturnAsap := false
 
@@ -138,7 +138,7 @@ func (r *RealFile[IDType]) findIDP(idp *subdb.IDPointer[IDType]) (int64, bool) {
 			return true
 		}
 
-		if (nLtIDP && id < idp.ID) || (!nLtIDP && id > idp.ID) {
+		if nLtIDP != (id < idp.ID) {
 			if (oldToNew && idp.ApproximationBehavior == subdb.APPROXIMATE_OLDEST) ||
 				(!oldToNew && idp.ApproximationBehavior == subdb.APPROXIMATE_NEWEST) {
 				needToReturnAsap = true
