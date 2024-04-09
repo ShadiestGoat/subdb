@@ -68,11 +68,11 @@ func (r *RingArrayBackend[IDType]) Insert(groups ...subdb.Group[IDType]) {
 	r.real.Items = append(r.real.Items[slStart:], groups...)
 }
 
-func (r *RingArrayBackend[IDType]) DeleteIDs(inp ...IDType) {
+func (r *RingArrayBackend[IDType]) DeleteID(inp ...IDType) {
 	r.real.DeleteID(inp...)
 }
 
-func (r *RingArrayBackend[IDType]) ReadIDs(inp ...IDType) []subdb.Group[IDType] {
+func (r *RingArrayBackend[IDType]) ReadID(inp ...IDType) []subdb.Group[IDType] {
 	return r.real.ReadID(inp...)
 }
 
@@ -80,7 +80,7 @@ func (r *RingArrayBackend[IDType]) Read(idPointer *subdb.IDPointer[IDType], oldT
 	return r.real.ReadQuery(idPointer, oldToNew, f)
 }
 
-func (r *RingArrayBackend[IDType]) DeleteQuery(idPointer *subdb.IDPointer[IDType], oldToNew bool, f subdb.Filter[IDType]) {
+func (r *RingArrayBackend[IDType]) Delete(idPointer *subdb.IDPointer[IDType], oldToNew bool, f subdb.Filter[IDType]) {
 	r.real.Delete(idPointer, oldToNew, f)
 }
 

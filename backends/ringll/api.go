@@ -22,7 +22,7 @@ func NewRing[IDType subdb.IDConstraint](size int) *RingLinkedListBackend[IDType]
 func (r *RingLinkedListBackend[IDType]) Register(h *subdb.Hooks[IDType]) {
 	h.Insert = append(h.Insert, r.Insert)
 	h.DeleteID = append(h.DeleteID, r.DeleteID)
-	h.DeleteQuery = append(h.DeleteQuery, r.DeleteWithFilter)
+	h.Delete = append(h.Delete, r.Delete)
 	h.ReadID = append(h.ReadID, r.ReadIDs)
 	h.Read = append(h.Read, r.ReadWithFilter)
 }
@@ -93,7 +93,7 @@ func nextNewToOld[IDType subdb.IDConstraint](n *Node[IDType]) *Node[IDType] {
 	return n.Prev
 }
 
-func (r *RingLinkedListBackend[IDType]) DeleteWithFilter(idPointer *subdb.IDPointer[IDType], oldToNew bool, f subdb.Filter[IDType]) {
+func (r *RingLinkedListBackend[IDType]) Delete(idPointer *subdb.IDPointer[IDType], oldToNew bool, f subdb.Filter[IDType]) {
 	r.lock.RLock()
 	defer r.lock.Unlock()
 
