@@ -21,7 +21,7 @@ type CommonArrayBackendUtil[IDType subdb.IDConstraint] struct {
 // Appends the ring's hooks at the end of the current hook list.
 func (r *CommonArrayBackendUtil[IDType]) Register(h *subdb.Hooks[IDType]) {
 	h.DeleteID = append(h.DeleteID, r.DeleteID)
-	h.DeleteQuery = append(h.DeleteQuery, r.Delete)
+	h.Delete = append(h.Delete, r.Delete)
 	h.ReadID = append(h.ReadID, r.ReadID)
 	h.Read = append(h.Read, r.ReadQuery)
 }
@@ -105,7 +105,7 @@ func (r *CommonArrayBackendUtil[IDType]) ReadQuery(idPointer *subdb.IDPointer[ID
 
 func (r *CommonArrayBackendUtil[IDType]) UtilDeleteQuery(idPointer *subdb.IDPointer[IDType], oldToNew bool, f subdb.Filter[IDType]) (subdb.Group[IDType], bool) {
 	r.Lock.Lock()
-	defer r.Lock.Lock()
+	defer r.Lock.Unlock()
 
 	badI := []int{}
 
