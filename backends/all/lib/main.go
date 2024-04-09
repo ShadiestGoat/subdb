@@ -64,6 +64,10 @@ func (r *CommonArrayBackendUtil[IDType]) queryFunc(idPointer *subdb.IDPointer[ID
 			closest--
 		}
 
+		if idPointer.ExcludePointer {
+			closest += d
+		}
+
 		i = closest
 	} else if !oldToNew {
 		i = len(r.Items) - 1

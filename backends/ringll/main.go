@@ -127,6 +127,14 @@ func (r *RingLinkedListBackend[IDType]) queryFunc(idPointer *subdb.IDPointer[IDT
 			} else if !oldToNew && idPointer.ApproximationBehavior == subdb.APPROXIMATE_NEWEST {
 				idp = idp.Next
 			}
+
+			if idPointer.ExcludePointer {
+				if oldToNew {
+					idp = idp.Next
+				} else {
+					idp = idp.Prev
+				}
+			}
 		}
 		
 		// This is basically a sanity check. It should always be false, but best make sure I guess?

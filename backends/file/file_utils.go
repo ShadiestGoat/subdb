@@ -108,7 +108,7 @@ func parseGroup[IDType subdb.IDConstraint](tplGroup subdb.Group[IDType], tplFiel
 }
 
 // Returns the offset of the start, if we should exitEarly
-func (r *RealFile[IDType]) findIDP(idp *subdb.IDPointer[IDType]) (int64, bool) {
+func (r *RealFile[IDType]) findIDP(idp *subdb.IDPointer[IDType], qOldToNew bool) (int64, bool) {
 	oldToNew := false
 
 	if idp.Hint == subdb.LOCATION_HINT_OLDEST {
@@ -121,9 +121,15 @@ func (r *RealFile[IDType]) findIDP(idp *subdb.IDPointer[IDType]) (int64, bool) {
 	nLtIDP := r.newestIsLargest != oldToNew
 
 	needToReturnAsap := false
+	excludedIDP := false
 
 	exitEarly := r.readFunc(oldToNew, 0, func(gData []byte, s, _ int64) bool {
 		if needToReturnAsap {
+			if idp.ExcludePointer && !excludedIDP {
+				excludedIDP = true
+
+				return false
+			}
 			offset = s
 			return true
 		}
@@ -134,6 +140,13 @@ func (r *RealFile[IDType]) findIDP(idp *subdb.IDPointer[IDType]) (int64, bool) {
 		if id == idp.ID {
 			offset = s
 			found = true
+
+			if idp.ExcludePointer {
+				needToReturnAsap = true
+				excludedIDP = true
+
+				return false
+			}
 
 			return true
 		}
@@ -146,6 +159,13 @@ func (r *RealFile[IDType]) findIDP(idp *subdb.IDPointer[IDType]) (int64, bool) {
 				return false
 			} else {
 				offset = s
+
+				if idp.ExcludePointer {
+					excludedIDP = true
+					needToReturnAsap = true
+					return false
+				}
+
 				return true
 			}
 		}
@@ -165,7 +185,7 @@ func (r *RealFile[IDType]) queryFunc(idPointer *subdb.IDPointer[IDType], oldToNe
 	offset := int64(0)
 
 	if !idpMet {
-		idpOffset, exitEarly := r.findIDP(idPointer)
+		idpOffset, exitEarly := r.findIDP(idPointer, oldToNew)
 		if exitEarly {
 			return false
 		}

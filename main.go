@@ -62,6 +62,8 @@ type IDPointer[IDType IDConstraint] struct {
 	// oldest -> 1, 2, 4, 5 <- newest
 	// If APPROXIMATE_OLDEST, idp will approximate to 2. If APPROXIMATE_NEWEST, idp will be 4.
 	ApproximationBehavior ApproximationBehavior
+	// If true, will exclude the idp from results (and any filter func)
+	ExcludePointer bool
 }
 
 // idPointer is a pointer to the starting id at which to apply f. If the pointer is nil, it will be ignored.
