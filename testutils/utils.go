@@ -1,6 +1,7 @@
 package testutils
 
 import (
+	"math"
 	"slices"
 	"strings"
 	"testing"
@@ -25,13 +26,24 @@ func (f *Filter[IDType]) Match(g subdb.Group[IDType]) (bool, bool) {
 	return true, f.Limit == 0
 }
 
+func (f *Filter[IDType]) Copy() subdb.Filter[IDType] {
+	return &Filter[IDType]{
+		Limit: f.Limit,
+		T:     f.T,
+	}
+}
+
 type QuerySetupOpts struct {
 	OldToNew,
 	NewestIsBiggest bool
-	DataSize int
+	DataSize,
+	QuerySize int
 }
 
-func GenerateGenericQueryTest(dataSize int, t *testing.T, newBackend func(newestIsBiggest bool) interface { subdb.BackendWithInsertFunc[int]; subdb.BackendWithReadFunc[int] }) {
+func GenerateGenericQueryTest(
+	dataSize int, t *testing.T, newBackend func(newestIsBiggest bool) subdb.BackendWithEverything[int],
+	testFunc func (idp *subdb.IDPointer[int], opts *QuerySetupOpts, t *testing.T, b subdb.BackendWithEverything[int]),
+	) {
 	arr := []bool{true, false}
 
 	for _, newestIsLargest := range arr {
@@ -61,19 +73,49 @@ func GenerateGenericQueryTest(dataSize int, t *testing.T, newBackend func(newest
 				}
 	
 				for _, oldToNew := range arr {
-					GenericQueryTest(idp, &QuerySetupOpts{
+					testFunc(idp, &QuerySetupOpts{
 						OldToNew:        oldToNew,
 						NewestIsBiggest: newestIsLargest,
 						DataSize:        dataSize,
-					}, t, b.Read)
+						QuerySize:       int(math.Floor(float64(dataSize)/10)),
+					}, t, b)
 				}
 			}
 		}
 	}
 }
 
-func GenericQueryTest(idp *subdb.IDPointer[int], opts *QuerySetupOpts, t *testing.T, rf subdb.ReadFunc[int]) {
-	name := []string{"read"}
+func GenericQueryExpectation(idp *subdb.IDPointer[int], opts *QuerySetupOpts) (eFirst, eLast int) {
+	dir := 1
+
+	if opts.OldToNew != opts.NewestIsBiggest {
+		dir = -1
+	}
+
+	if idp == nil {
+		if opts.OldToNew {
+			eFirst = 0
+		} else {
+			eFirst = opts.DataSize - 1
+		}
+		if !opts.NewestIsBiggest {
+			eFirst = opts.DataSize - 1 - eFirst
+		}
+	} else {
+		eFirst = idp.ID
+		if idp.ExcludePointer {
+			eFirst += dir
+		}
+	}
+
+	d := opts.QuerySize - 1
+	eLast = eFirst + (d * dir)
+
+	return
+}
+
+func GenerateGenericTestName(n string, idp *subdb.IDPointer[int], opts *QuerySetupOpts) string {
+	name := []string{n}
 	if idp != nil {
 		name = append(name, "idp")
 		if idp.ExcludePointer {
@@ -93,59 +135,53 @@ func GenericQueryTest(idp *subdb.IDPointer[int], opts *QuerySetupOpts, t *testin
 		name = append(name, "newSmall")
 	}
 
-	t.Run(strings.Join(name, "_"), func(t *testing.T) {
-		querySize := 10
+	return strings.Join(name, "_")
+}
+
+func GenericReadQueryTest(idp *subdb.IDPointer[int], opts *QuerySetupOpts, t *testing.T, b subdb.BackendWithEverything[int]) {
+	t.Run(GenerateGenericTestName("read", idp, opts), func(t *testing.T) {
 		f := &Filter[int]{
-			Limit: querySize,
+			Limit: opts.QuerySize,
 			T:     t,
 		}
 
-		if idp != nil {
-			t.Logf("IDP: %v", idp.ID)
-		}
+		o, early := b.Read(idp, opts.OldToNew, f)
 
-		o, early := rf(idp, opts.OldToNew, f)
-
-		if !early || len(o) != querySize {
+		if !early || len(o) != opts.QuerySize {
 			t.Logf("Failed query, expected early exit with 10 values, got: early: %v, vals: %#v", early, o)
 			t.FailNow()
 		}
 
-		var eFirst int
+		eFirst, eLast := GenericQueryExpectation(idp, opts)
+
 		rFirst, rLast := o[0].GetID(), o[len(o)-1].GetID()
-
-		dir := 1
-
-		if opts.OldToNew != opts.NewestIsBiggest {
-			dir = -1
-		}
-
-		if idp == nil {
-			if opts.OldToNew {
-				eFirst = 0
-			} else {
-				eFirst = opts.DataSize - 1
-			}
-			if !opts.NewestIsBiggest {
-				eFirst = opts.DataSize - 1 - eFirst
-			}
-		} else {
-			eFirst = idp.ID
-			if idp.ExcludePointer {
-				eFirst += dir
-			}
-		}
 
 		if eFirst != rFirst {
 			t.Logf("Unexpected first value! Expected: %v, got: %v", eFirst, rFirst)
 			t.Fail()
 		}
-
-		d := querySize - 1
-		eLast := eFirst + (d * dir)
-
 		if eLast != rLast {
 			t.Logf("Unexpected last value! Expected: %v, got: %v", eLast, rLast)
+			t.Fail()
+		}
+	})
+}
+
+func GenericDeleteQueryTest(idp *subdb.IDPointer[int], opts *QuerySetupOpts, t *testing.T, b subdb.BackendWithEverything[int]) {
+	t.Run(GenerateGenericTestName("delete", idp, opts), func(t *testing.T) {
+		f := &Filter[int]{
+			Limit: opts.QuerySize,
+			T:     t,
+		}
+
+		b.Delete(idp, opts.OldToNew, f)
+
+		eFirst, eLast := GenericQueryExpectation(idp, opts)
+
+		o := b.ReadID(eFirst, eLast)
+
+		if len(o) != 0 {
+			t.Logf("Unexpected output! Got %#v, expected nothing!", o)
 			t.Fail()
 		}
 	})

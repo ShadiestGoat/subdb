@@ -21,9 +21,8 @@
     - [ ] ReadID
   - [ ] Ring - Array
     - [x] Insert
-    - [ ] Delete
-    - [ ] DeleteID
-    - [x] Read
+    - [x] Delete
+    - [x] DeleteIDQuery
     - [x] ReadID
   - [ ] Ring - Linked List
     - [ ] Insert
