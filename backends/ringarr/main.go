@@ -10,8 +10,8 @@ type RingArrayBackend[IDType subdb.IDConstraint] struct {
 	maxLen int
 }
 
-func NewRingArrayBackend[IDType subdb.IDConstraint](maxSize int, newestIsLargest bool) RingArrayBackend[IDType] {
-	return RingArrayBackend[IDType]{
+func NewRingArrayBackend[IDType subdb.IDConstraint](maxSize int, newestIsLargest bool) *RingArrayBackend[IDType] {
+	return &RingArrayBackend[IDType]{
 		real: lib.NewCommonArrayUtil(func() []subdb.Group[IDType] {
 			return make([]subdb.Group[IDType], 0, maxSize)
 		}, newestIsLargest),
@@ -76,7 +76,7 @@ func (r *RingArrayBackend[IDType]) ReadIDs(inp ...IDType) []subdb.Group[IDType] 
 	return r.real.ReadID(inp...)
 }
 
-func (r *RingArrayBackend[IDType]) ReadQuery(idPointer *subdb.IDPointer[IDType], oldToNew bool, f subdb.Filter[IDType]) ([]subdb.Group[IDType], bool) {
+func (r *RingArrayBackend[IDType]) Read(idPointer *subdb.IDPointer[IDType], oldToNew bool, f subdb.Filter[IDType]) ([]subdb.Group[IDType], bool) {
 	return r.real.ReadQuery(idPointer, oldToNew, f)
 }
 

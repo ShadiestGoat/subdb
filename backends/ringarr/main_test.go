@@ -75,76 +75,11 @@ func TestRead(t *testing.T) {
 		}
 	})
 
-	arr := []bool{true, false}
-
-	for _, hasIDP := range arr {
-		for _, oldToNew := range arr {
-			name := "Query"
-			var idp *subdb.IDPointer[int]
-
-			if hasIDP {
-				name += "IDP"
-				idp = &subdb.IDPointer[int]{
-					ID:                    RING_SIZE/2,
-				}
-			} else {
-				name += "NoIDP"
-			}
-
-			if oldToNew {
-				name += "oldToNew"
-			} else {
-				name += "newToOld"
-			}
-
-			t.Run(name, func(t *testing.T) {
-				querySize := 10
-				f := &testutils.Filter[int]{
-					Limit: querySize,
-					T: t,
-				}
-
-				if idp != nil {
-					t.Logf("IDP: %v", idp.ID)
-				}
-
-				o, early := d.ReadQuery(idp, oldToNew, f)
-		
-				if !early || len(o) != querySize {
-					t.Logf("Failed query, expected early exit with 10 values, got: early: %v, vals: %#v", early, o)
-					t.FailNow()
-				}
-
-				var eFirst int
-				rFirst, rLast := o[0].GetID(), o[len(o)-1].GetID()
-
-
-				if idp == nil {
-					if oldToNew {
-						eFirst = 0
-					} else {
-						eFirst = RING_SIZE - 1
-					}
-				} else {
-					eFirst = idp.ID
-				}
-
-				if eFirst != rFirst {
-					t.Logf("Unexpected first value! Expected: %v, got: %v", eFirst, rFirst)
-					t.Fail()
-				}
-
-				d := querySize - 1
-				if !oldToNew {
-					d *= -1
-				}
-				eLast := eFirst + d
-
-				if eLast != rLast {
-					t.Logf("Unexpected last value! Expected: %v, got: %v", eLast, rLast)
-					t.Fail()
-				}
-			})
-		}
-	}
+	testutils.GenerateGenericQueryTest(RING_SIZE, t, func(newestIsBiggest bool) interface {
+		subdb.BackendWithInsertFunc[int]
+		subdb.BackendWithReadFunc[int]
+	} {
+		b := ringarr.NewRingArrayBackend[int](RING_SIZE, newestIsBiggest)
+		return b
+	})
 }

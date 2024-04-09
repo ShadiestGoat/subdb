@@ -1,6 +1,11 @@
 - [ ] Storage file backend
   - [ ] Start/Stop hook
   - [ ] Periodic flushing
+- [x] Exclude IDP approx (useful for backend swaps)
+  - [x] RingArray
+  - [x] RingLL
+  - [x] File
+  - [x] All
 - [ ] Write tests for specific backends
   - [ ] All
     - [ ] Insert
@@ -18,8 +23,8 @@
     - [x] Insert
     - [ ] Delete
     - [ ] DeleteID
-    - [ ] Read
-    - [ ] ReadID
+    - [x] Read
+    - [x] ReadID
   - [ ] Ring - Linked List
     - [ ] Insert
     - [ ] Delete
