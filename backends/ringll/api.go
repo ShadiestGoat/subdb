@@ -24,8 +24,8 @@ func (r *RingLinkedListBackend[IDType]) Register(h *subdb.Hooks[IDType]) {
 	h.Insert = append(h.Insert, r.Insert)
 	h.DeleteID = append(h.DeleteID, r.DeleteID)
 	h.Delete = append(h.Delete, r.Delete)
-	h.ReadID = append(h.ReadID, r.ReadIDs)
-	h.Read = append(h.Read, r.ReadWithFilter)
+	h.ReadID = append(h.ReadID, r.ReadID)
+	h.Read = append(h.Read, r.Read)
 }
 
 func (r *RingLinkedListBackend[IDType]) DeleteID(ids ...IDType) {
@@ -70,7 +70,7 @@ func (r *RingLinkedListBackend[IDType]) Insert(groups ...subdb.Group[IDType]) {
 	}
 }
 
-func (r *RingLinkedListBackend[IDType]) ReadIDs(ids ...IDType) []subdb.Group[IDType] {
+func (r *RingLinkedListBackend[IDType]) ReadID(ids ...IDType) []subdb.Group[IDType] {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 
@@ -103,7 +103,7 @@ func (r *RingLinkedListBackend[IDType]) Delete(idPointer *subdb.IDPointer[IDType
 	})
 }
 
-func (r *RingLinkedListBackend[IDType]) ReadWithFilter(idPointer *subdb.IDPointer[IDType], oldToNew bool, f subdb.Filter[IDType]) ([]subdb.Group[IDType], bool) {
+func (r *RingLinkedListBackend[IDType]) Read(idPointer *subdb.IDPointer[IDType], oldToNew bool, f subdb.Filter[IDType]) ([]subdb.Group[IDType], bool) {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 
