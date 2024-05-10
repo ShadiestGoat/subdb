@@ -135,5 +135,9 @@ func (r *RealFile[IDType]) Insert(inp ...subdb.Group[IDType]) {
 	defer r.lock.Unlock()
 
 	r.f.Seek(0, 2)
-	r.f.Write(buff)
+	_, err := r.f.Write(buff)
+
+	if err != nil {
+		panic(err)
+	}
 }
