@@ -1,10 +1,12 @@
 package types
 
-import "encoding/binary"
+import (
+	"encoding/binary"
+)
 
 func encodeInt[T int | uint](v T, size int) []byte {
 	b := make([]byte, size)
-	switch v {
+	switch size {
 	case 2:
 		binary.LittleEndian.PutUint16(b, uint16(v))
 	case 4:
