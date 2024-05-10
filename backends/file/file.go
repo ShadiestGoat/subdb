@@ -2,6 +2,7 @@ package file
 
 import (
 	"os"
+	"slices"
 	"sync"
 
 	"github.com/shadiestgoat/subdb"
@@ -24,10 +25,56 @@ type RealFile[IDType subdb.IDConstraint] struct {
 	templateGroup subdb.Group[IDType]
 	templateFields []subdb.Field
 	newestIsLargest bool
-	// The size of the uint in bytes. Valid values are 2 (uint16), 4 (uint32), 8 (uint64)
 	groupSizeSize int
 }
 
+type FileOpts struct {
+	// The size of the uint in bytes. Valid values are 2 (uint16), 4 (uint32), 8 (uint64)
+	GroupSizeSize int
+	// The newest group has the highest id
+	NewestIsLargest bool
+	// Path to the file
+	Path string
+	// Perms for the file
+	Perms os.FileMode
+}
+
+type TplGroup[IDType subdb.IDConstraint] struct {
+	// Example group structure
+	Group subdb.Group[IDType]
+	// Example fields of the group. First field must be the ID
+	Fields []subdb.Field
+}
+
+// Make a new file-only backend. In practice, NewFile should be used.
+func NewFileOnly[IDType subdb.IDConstraint](opts *FileOpts, tpl *TplGroup[IDType]) *RealFile[IDType] {
+	if opts == nil {
+		panic("Can't create file backend - no opts")
+	}
+	if opts.GroupSizeSize == 0 {
+		opts.GroupSizeSize = 4
+	}
+	if opts.Path == "" {
+		panic("Couldn't create file - path is empty")
+	}
+	if opts.Perms == 0 {
+		opts.Perms = 0755
+	}
+
+	f, err := os.OpenFile(opts.Path, os.O_RDWR | os.O_CREATE, opts.Perms)
+	if err != nil {
+		panic(err)
+	}
+
+	return &RealFile[IDType]{
+		f:               f,
+		lock:            &sync.Mutex{},
+		templateGroup:   tpl.Group,
+		templateFields:  tpl.Fields,
+		newestIsLargest: opts.NewestIsLargest,
+		groupSizeSize:   opts.GroupSizeSize,
+	}
+}
 
 func (r *RealFile[IDType]) ReadID(ids ...IDType) []subdb.Group[IDType] {
 	m := make(map[IDType]bool, len(ids))
