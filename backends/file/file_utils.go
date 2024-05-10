@@ -104,7 +104,7 @@ func parseGroupWithoutID[IDType subdb.IDConstraint](tplGroup subdb.Group[IDType]
 func parseGroup[IDType subdb.IDConstraint](tplGroup subdb.Group[IDType], tplFields []subdb.Field, data []byte) subdb.Group[IDType] {
 	id, off := parseField(tplFields[0], data)
 
-	return parseGroupWithoutID(tplGroup, tplFields, id, data[off:])
+	return parseGroupWithoutID(tplGroup, tplFields[1:], id, data[off:])
 }
 
 // Returns the offset of the start, if we should exitEarly
