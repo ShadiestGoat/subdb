@@ -10,8 +10,8 @@ type AllBackend[IDType subdb.IDConstraint] struct {
 	real lib.CommonArrayBackendUtil[IDType]
 }
 
-func NewAllBackend[IDType subdb.IDConstraint](newestIsLargest bool) AllBackend[IDType] {
-	return AllBackend[IDType]{
+func NewAllBackend[IDType subdb.IDConstraint](newestIsLargest bool) *AllBackend[IDType] {
+	return &AllBackend[IDType]{
 		real: lib.NewCommonArrayUtil[IDType](func() []subdb.Group[IDType] {
 			return make([]subdb.Group[IDType], 0)
 		}, newestIsLargest),

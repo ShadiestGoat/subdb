@@ -8,8 +8,25 @@ import (
 
 type File[IDType subdb.IDConstraint] struct {
 	flush *all.AllBackend[IDType]
-	file  *all.AllBackend[IDType]
+	file  *RealFile[IDType]
 }
+
+func NewFileBackend[IDType subdb.IDConstraint](opts *FileOpts, tpl *TplGroup[IDType]) *File[IDType] {
+	return &File[IDType]{
+		flush: all.NewAllBackend[IDType](opts.NewestIsLargest),
+		file:  NewFileOnly(opts, tpl),
+	}
+}
+
+// Registers all the hooks except Load!
+func (r *File[IDType]) Register(h *subdb.Hooks[IDType]) {
+	h.Insert = append(h.Insert, r.Insert)
+	h.DeleteID = append(h.DeleteID, r.DeleteID)
+	h.Delete = append(h.Delete, r.Delete)
+	h.Read = append(h.Read, r.Read)
+	h.ReadID = append(h.ReadID, r.ReadID)
+}
+
 
 func (r *File[IDType]) ReadID(ids ...IDType) []subdb.Group[IDType] {
 	return subdb.HooksReadID([]subdb.ReadIDFunc[IDType]{
@@ -63,4 +80,8 @@ func (r *File[IDType]) Delete(idPointer *subdb.IDPointer[IDType], oldToNew bool,
 
 func (r *File[IDType]) Insert(groups ...subdb.Group[IDType]) {
 	r.flush.Insert(groups...)
+}
+
+func (r *File[IDType]) Flush() {
+	r.file.Insert(r.flush.Reset()...)
 }
