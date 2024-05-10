@@ -36,12 +36,14 @@ func (r *RealFile[IDType]) ReadID(ids ...IDType) []subdb.Group[IDType] {
 		m[id] = true
 	}
 
+	oldToNew := false
+
 	o := make([]subdb.Group[IDType], 0, len(m))
 
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	r.readFunc(true, 0, func(gData []byte, s, e int64) bool {
+	r.readFunc(oldToNew, 0, func(gData []byte, s, e int64) bool {
 		f, off := parseField(r.templateFields[0], gData)
 		id := f.GetValue().(IDType)
 		if !m[id] {
@@ -54,6 +56,10 @@ func (r *RealFile[IDType]) ReadID(ids ...IDType) []subdb.Group[IDType] {
 		delete(m, id)
 		return len(m) == 0
 	})
+
+	if !oldToNew {
+		slices.Reverse(o)
+	}
 
 	return o
 }
@@ -80,10 +86,12 @@ func (r *RealFile[IDType]) DeleteID(ids ...IDType) {
 
 	o := make([][2]int64, 0, len(m))
 
+	oldToNew := false
+
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	r.readFunc(true, 0, func(gData []byte, s, e int64) bool {
+	r.readFunc(oldToNew, 0, func(gData []byte, s, e int64) bool {
 		f, _ := parseField(r.templateFields[0], gData)
 		id := f.GetValue().(IDType)
 		if !m[id] {
@@ -96,7 +104,7 @@ func (r *RealFile[IDType]) DeleteID(ids ...IDType) {
 		return len(m) == 0
 	})
 
-	r.deleteRanges(true, o)
+	r.deleteRanges(oldToNew, o)
 }
 
 func (r *RealFile[IDType]) Delete(idPointer *subdb.IDPointer[IDType], oldToNew bool, f subdb.Filter[IDType]) {
