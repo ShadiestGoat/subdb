@@ -1,6 +1,7 @@
 package testutils
 
 import (
+	"fmt"
 	"math"
 	"slices"
 	"strings"
@@ -45,14 +46,32 @@ func (f *Filter[IDType]) Copy() subdb.Filter[IDType] {
 
 type QuerySetupOpts struct {
 	OldToNew,
-	NewestIsBiggest bool
+	NewestIsLargest bool
 	DataSize,
 	QuerySize int
 }
 
+type NewBackendFunc = func(newestIsLargest bool) subdb.BackendWithEverything[int]
+type PrepBackendFunc = func (idp *subdb.IDPointer[int], q *QuerySetupOpts) subdb.BackendWithEverything[int]
+
+func prepBackend(mkBackend NewBackendFunc) PrepBackendFunc {
+	return func(idp *subdb.IDPointer[int], q *QuerySetupOpts) subdb.BackendWithEverything[int] {
+		b := mkBackend(q.NewestIsLargest)
+		d := MakeData(q.DataSize)
+
+		if !q.NewestIsLargest {
+			slices.Reverse(d)
+		}
+
+		b.Insert(d...)
+
+		return b
+	}
+}
+
 func GenerateGenericQueryTest(
 	dataSize int, t *testing.T, newBackend func(newestIsBiggest bool) subdb.BackendWithEverything[int],
-	testFunc func (idp *subdb.IDPointer[int], opts *QuerySetupOpts, t *testing.T, b subdb.BackendWithEverything[int]),
+	testFunc func (idp *subdb.IDPointer[int], opts *QuerySetupOpts, t *testing.T, b PrepBackendFunc),
 	) {
 	arr := []bool{true, false}
 
@@ -69,26 +88,8 @@ func GenerateGenericQueryTest(
 
 		for _, hasIDP := range arr {
 			for _, exclIDP := range arr {
-				var idp *subdb.IDPointer[int]
-	
-				if hasIDP {
-					idp = &subdb.IDPointer[int]{
-				ID:                    dataSize/2,
-						ExcludePointer: exclIDP,
-					}
-				}
-	
-				if !hasIDP && exclIDP {
-					continue
-				}
-	
-				for _, oldToNew := range arr {
-					testFunc(idp, &QuerySetupOpts{
-						OldToNew:        oldToNew,
-						NewestIsBiggest: newestIsLargest,
-						DataSize:        dataSize,
-						QuerySize:       int(math.Floor(float64(dataSize)/10)),
-					}, t, b)
+							NewestIsLargest: newestIsLargest,
+						}, t, prepBackend(newBackend))
 				}
 			}
 		}
@@ -98,7 +99,7 @@ func GenerateGenericQueryTest(
 func GenericQueryExpectation(idp *subdb.IDPointer[int], opts *QuerySetupOpts) (eFirst, eLast, eLen int, eEarly bool) {
 	dir := 1
 
-	if opts.OldToNew != opts.NewestIsBiggest {
+	if opts.OldToNew != opts.NewestIsLargest {
 		dir = -1
 	}
 
@@ -108,7 +109,7 @@ func GenericQueryExpectation(idp *subdb.IDPointer[int], opts *QuerySetupOpts) (e
 		} else {
 			eFirst = opts.DataSize - 1
 		}
-		if !opts.NewestIsBiggest {
+		if !opts.NewestIsLargest {
 			eFirst = opts.DataSize - 1 - eFirst
 		}
 	} else {
@@ -161,7 +162,7 @@ func GenerateGenericTestName(n string, idp *subdb.IDPointer[int], opts *QuerySet
 		name = append(name, "newToOld")
 	}
 
-	if opts.NewestIsBiggest {
+	if opts.NewestIsLargest {
 		name = append(name, "newBig")
 	} else {
 		name = append(name, "newSmall")
@@ -170,8 +171,10 @@ func GenerateGenericTestName(n string, idp *subdb.IDPointer[int], opts *QuerySet
 	return strings.Join(name, "_")
 }
 
-func GenericReadQueryTest(idp *subdb.IDPointer[int], opts *QuerySetupOpts, t *testing.T, b subdb.BackendWithEverything[int]) {
+func GenericReadQueryTest(idp *subdb.IDPointer[int], opts *QuerySetupOpts, t *testing.T, prepBackend PrepBackendFunc) {
 	t.Run(GenerateGenericTestName("read", idp, opts), func(t *testing.T) {
+		b := prepBackend(idp, opts)
+
 		f := &Filter[int]{
 			Limit: opts.QuerySize,
 			T:     t,
@@ -203,6 +206,7 @@ func GenericReadQueryTest(idp *subdb.IDPointer[int], opts *QuerySetupOpts, t *te
 	})
 }
 
+func GenericDeleteQueryTest(idp *subdb.IDPointer[int], opts *QuerySetupOpts, t *testing.T, prepBackend PrepBackendFunc) {
 	eFirst, eLast, eLen, _ := GenericQueryExpectation(idp, opts)
 
 	if eLen == 0 {
@@ -210,6 +214,8 @@ func GenericReadQueryTest(idp *subdb.IDPointer[int], opts *QuerySetupOpts, t *te
 	}
 
 	t.Run(GenerateGenericTestName("delete", idp, opts), func(t *testing.T) {
+		b := prepBackend(idp, opts)
+
 		f := &Filter[int]{
 			Limit: opts.QuerySize,
 			T:     t,
