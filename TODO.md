@@ -1,8 +1,9 @@
 - [ ] Storage file backend
   - [ ] Start/Stop hook
   - [ ] Periodic flushing
-  - [ ] Real read/write for file
+  - [x] Real read/write for file
   - [ ] All static field optimization
+  - [ ] Add some way to handle errors, logging, etc?
 - [x] Exclude IDP approx (useful for backend swaps)
   - [x] RingArray
   - [x] RingLL
