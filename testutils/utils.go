@@ -74,22 +74,37 @@ func GenerateGenericQueryTest(
 	testFunc func (idp *subdb.IDPointer[int], opts *QuerySetupOpts, t *testing.T, b PrepBackendFunc),
 	) {
 	arr := []bool{true, false}
+	idps := []int{0, dataSize/2 - 1, dataSize/2, dataSize/2 + 1, dataSize - 1}
 
 	for _, newestIsLargest := range arr {
-		b := newBackend(newestIsLargest)
-
-		d := MakeData(dataSize)
-
-		if !newestIsLargest {
-			slices.Reverse(d)
-		}
-
-		b.Insert(d...)
-
 		for _, hasIDP := range arr {
 			for _, exclIDP := range arr {
+				for i, idpV := range idps {
+					if !hasIDP && (exclIDP || i != 0) {
+						continue
+					}
+
+					var idp *subdb.IDPointer[int]
+		
+					if hasIDP {
+						idp = &subdb.IDPointer[int]{
+							ID:             idpV,
+							ExcludePointer: exclIDP,
+						}
+					}
+		
+					if !hasIDP && exclIDP {
+						continue
+					}
+		
+					for _, oldToNew := range arr {
+						testFunc(idp, &QuerySetupOpts{
+							OldToNew:        oldToNew,
 							NewestIsLargest: newestIsLargest,
+							DataSize:        dataSize,
+							QuerySize:       int(math.Floor(float64(dataSize)/10)),
 						}, t, prepBackend(newBackend))
+					}
 				}
 			}
 		}
