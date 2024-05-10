@@ -58,10 +58,10 @@ type Hooks[IDType IDConstraint] struct {
 		{{ end }}
 
 		for {{ default "_" $async.iVar }}, h := range h.{{ .name }} {
-			go func () {
+			go func (h {{ .name }}Func[IDType] {{- if $async.iVar}}, {{ $async.iVar}} int {{- end }}) {
 				h({{ include "args" (dict "t" "inpArgs" "v" $args)}})
 				l.Done()
-			}()
+			}(h {{- if $async.iVar }}, {{ $async.iVar }} {{- end }})
 		}
 
 		if cb != nil {

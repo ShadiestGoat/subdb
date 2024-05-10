@@ -47,10 +47,10 @@ func (h *Hooks[IDType]) DoInsert(cb chan bool, groups ...Group[IDType]) {
 	l.Add(len(h.Insert))
 
 	for _, h := range h.Insert {
-		go func() {
+		go func(h InsertFunc[IDType]) {
 			h(groups...)
 			l.Done()
-		}()
+		}(h)
 	}
 
 	if cb != nil {
@@ -66,10 +66,10 @@ func (h *Hooks[IDType]) DoDeleteID(cb chan bool, ids ...IDType) {
 	l.Add(len(h.DeleteID))
 
 	for _, h := range h.DeleteID {
-		go func() {
+		go func(h DeleteIDFunc[IDType]) {
 			h(ids...)
 			l.Done()
-		}()
+		}(h)
 	}
 
 	if cb != nil {
@@ -90,10 +90,10 @@ func (h *Hooks[IDType]) DoDelete(cb chan bool, idPointer *IDPointer[IDType], old
 	}
 
 	for i, h := range h.Delete {
-		go func() {
+		go func(h DeleteFunc[IDType], i int) {
 			h(idPointer, oldToNew, filters[i])
 			l.Done()
-		}()
+		}(h, i)
 	}
 
 	if cb != nil {
