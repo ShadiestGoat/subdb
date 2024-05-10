@@ -13,6 +13,8 @@ func (r *RealFile[IDType]) parseGrpSize(grpSizeRaw []byte) int64 {
 	return int64(sizeCol.Value)
 }
 
+// s - start of the data, including g size
+// e - end of the data, including g size
 func (r *RealFile[IDType]) readFunc(oldToNew bool, offset int64, h func(gData []byte, s, e int64) bool) bool {
 	stat, err := r.f.Stat()
 	if err != nil {
@@ -119,22 +121,34 @@ func (r *RealFile[IDType]) findIDP(idp *subdb.IDPointer[IDType], qOldToNew bool)
 		oldToNew = true
 	}
 
-	offset := int64(0)
-	found := false
+	offset := int64(-1)
 
-	nLtIDP := r.newestIsLargest != oldToNew
+	idLtIDP := r.newestIsLargest != oldToNew
 
+	exactFound := false
 	needToReturnAsap := false
-	excludedIDP := false
 
-	exitEarly := r.readFunc(oldToNew, 0, func(gData []byte, s, _ int64) bool {
+	lastStart := [2]int64{-1, -1}
+
+	idpExcludeFunc := func (e int64, lastStartIndex int) bool {
+		if qOldToNew {
+			offset = e + 1
+			return true
+		}
+		if oldToNew {
+			offset = lastStart[lastStartIndex]
+			return true
+		}
+
+		needToReturnAsap = true
+		return false
+	}
+
+	exitEarly := r.readFunc(oldToNew, 0, func(gData []byte, s, e int64) bool {
 		if needToReturnAsap {
-			if idp.ExcludePointer && !excludedIDP {
-				excludedIDP = true
-
-				return false
-			}
 			offset = s
+			needToReturnAsap = false
+			
 			return true
 		}
 
@@ -142,46 +156,48 @@ func (r *RealFile[IDType]) findIDP(idp *subdb.IDPointer[IDType], qOldToNew bool)
 		id := f.GetValue().(IDType)
 
 		if id == idp.ID {
-			offset = s
-			found = true
+			exactFound = true
 
 			if idp.ExcludePointer {
-				needToReturnAsap = true
-				excludedIDP = true
-
-				return false
+				return idpExcludeFunc(e, 0)
 			}
+
+			offset = s
 
 			return true
 		}
 
-		if nLtIDP != (id < idp.ID) {
-			if (oldToNew && idp.ApproximationBehavior == subdb.APPROXIMATE_OLDEST) ||
-				(!oldToNew && idp.ApproximationBehavior == subdb.APPROXIMATE_NEWEST) {
-				needToReturnAsap = true
+		if idLtIDP == (id < idp.ID) {
+			if idp.ApproximationBehavior == subdb.APPROXIMATE_QUIT_EARLY {
+				return true
+			}
+			
+			approxOldest := idp.ApproximationBehavior == subdb.APPROXIMATE_OLDEST
 
-				return false
+			if (oldToNew == approxOldest) {
+				offset = lastStart[0]
+
+				return true
 			} else {
-				offset = s
-
 				if idp.ExcludePointer {
-					excludedIDP = true
-					needToReturnAsap = true
-					return false
+					return idpExcludeFunc(e, 1)
 				}
+				offset = s
 
 				return true
 			}
 		}
 
+		lastStart[0], lastStart[1] = s, lastStart[0]
+
 		return false
 	})
 
-	if exitEarly && !found && idp.ApproximationBehavior == subdb.APPROXIMATE_QUIT_EARLY {
+	if exitEarly && !exactFound && idp.ApproximationBehavior == subdb.APPROXIMATE_QUIT_EARLY {
 		return 0, true
 	}
 
-	return offset, false
+	return offset, offset == -1 || needToReturnAsap
 }
 
 func (r *RealFile[IDType]) queryFunc(idPointer *subdb.IDPointer[IDType], oldToNew bool, f subdb.Filter[IDType], action func (g subdb.Group[IDType], s, e int64)) bool {
