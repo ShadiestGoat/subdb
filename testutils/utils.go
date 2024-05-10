@@ -14,6 +14,16 @@ type TestGroup struct {
 	ID int
 }
 
+type MatchAll[IDType subdb.IDConstraint] struct {}
+
+func (v MatchAll[IDType]) Match(subdb.Group[IDType]) (bool, bool) {
+	return true, false
+}
+
+func (v MatchAll[IDType]) Copy() subdb.Filter[IDType] {
+	return MatchAll[IDType]{}
+}
+
 // Matches the first {Limit} values
 type Filter[IDType subdb.IDConstraint] struct {
 	Limit int

@@ -33,18 +33,6 @@ func backendWrap(f NewBackend) func (bool) subdb.BackendWithEverything[int] {
 	}
 }
 
-type matchAll[IDType subdb.IDConstraint] struct {
-
-}
-
-func (v matchAll[IDType]) Match(subdb.Group[IDType]) (bool, bool) {
-	return true, false
-}
-
-func (v matchAll[IDType]) Copy() subdb.Filter[IDType] {
-	return matchAll[IDType]{}
-}
-
 func Insert(t *testing.T, newBackend NewBackend) {
 	sizes := []int{
 		RING_SIZE/10,
@@ -62,7 +50,7 @@ func Insert(t *testing.T, newBackend NewBackend) {
 		d := testutils.MakeData(s)
 		b.Insert(d...)
 		
-		dumped, _ := b.Read(nil, true, matchAll[int]{})
+		dumped, _ := b.Read(nil, true, testutils.MatchAll[int]{})
 		neededLen := s
 		if neededLen > RING_SIZE {
 			neededLen = RING_SIZE
