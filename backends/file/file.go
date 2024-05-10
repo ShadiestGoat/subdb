@@ -90,7 +90,7 @@ func (r *RealFile[IDType]) ReadID(ids ...IDType) []subdb.Group[IDType] {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	r.readFunc(oldToNew, 0, func(gData []byte, s, e int64) bool {
+	r.readFunc(oldToNew, oldToNew, 0, func(gData []byte, s, e int64) bool {
 		f, off := parseField(r.templateFields[0], gData)
 		id := f.GetValue().(IDType)
 		if !m[id] {
@@ -138,7 +138,7 @@ func (r *RealFile[IDType]) DeleteID(ids ...IDType) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	r.readFunc(oldToNew, 0, func(gData []byte, s, e int64) bool {
+	r.readFunc(oldToNew, oldToNew, 0, func(gData []byte, s, e int64) bool {
 		f, _ := parseField(r.templateFields[0], gData)
 		id := f.GetValue().(IDType)
 		if !m[id] {

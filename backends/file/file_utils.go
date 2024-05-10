@@ -15,15 +15,29 @@ func (r *RealFile[IDType]) parseGrpSize(grpSizeRaw []byte) int64 {
 
 // s - start of the data, including g size
 // e - end of the data, including g size
-func (r *RealFile[IDType]) readFunc(oldToNew bool, offset int64, h func(gData []byte, s, e int64) bool) bool {
+func (r *RealFile[IDType]) readFunc(oldToNew, offsetFromStart bool, offset int64, h func(gData []byte, s, e int64) bool) bool {
 	stat, err := r.f.Stat()
 	if err != nil {
 		panic("db file stat failed: " + err.Error())
 	}
 	size := stat.Size()
 
+	if !offsetFromStart {
+		offset = size - offset
+	}
+
 	if !oldToNew {
-		offset = size - offset - int64(r.groupSizeSize)
+		// were pointing to the start of a row that we need to read, but then we need to read in the other direction so...
+		exitEarly := false
+		r.readFunc(true, true, offset, func(gData []byte, s, e int64) bool {
+			exitEarly = h(gData, s, e)
+			return true
+		})
+		if exitEarly {
+			return true
+		}
+		
+		offset -= int64(r.groupSizeSize)
 	}
 
 	for {
@@ -43,24 +57,25 @@ func (r *RealFile[IDType]) readFunc(oldToNew bool, offset int64, h func(gData []
 		grpSizeRaw := make([]byte, r.groupSizeSize)
 		r.f.Read(grpSizeRaw)
 		grpSize := r.parseGrpSize(grpSizeRaw)
-		
-		// The offset needed from cur pos to read the grp data
-		off := int64(r.groupSizeSize)
+
 		if !oldToNew {
-			off = -grpSize
+			r.f.Seek(-(grpSize + int64(r.groupSizeSize)), 1)
 		}
-		r.f.Seek(off, 1)
 
 		grpData := make([]byte, grpSize)
 		r.f.Read(grpData)
 
-		s := offset		
+		s := offset
 		if !oldToNew {
-			s -= grpSize - int64(r.groupSizeSize)
+			s -= grpSize + int64(r.groupSizeSize)
 		}
-		e := s + grpSize + int64(r.groupSizeSize) - 1
+		e := s + grpSize + int64(r.groupSizeSize) * 2 - 1
 
-		h(grpData, s, e)
+		exitEarly := h(grpData, s, e)
+
+		if exitEarly {
+			return true
+		}
 
 		if oldToNew {
 			offset = e + 1
@@ -144,7 +159,7 @@ func (r *RealFile[IDType]) findIDP(idp *subdb.IDPointer[IDType], qOldToNew bool)
 		return false
 	}
 
-	exitEarly := r.readFunc(oldToNew, 0, func(gData []byte, s, e int64) bool {
+	exitEarly := r.readFunc(oldToNew, oldToNew,  0, func(gData []byte, s, e int64) bool {
 		if needToReturnAsap {
 			offset = s
 			needToReturnAsap = false
@@ -200,22 +215,23 @@ func (r *RealFile[IDType]) findIDP(idp *subdb.IDPointer[IDType], qOldToNew bool)
 	return offset, offset == -1 || needToReturnAsap
 }
 
-func (r *RealFile[IDType]) queryFunc(idPointer *subdb.IDPointer[IDType], oldToNew bool, f subdb.Filter[IDType], action func (g subdb.Group[IDType], s, e int64)) bool {
+func (r *RealFile[IDType]) queryFunc(idPointer *subdb.IDPointer[IDType], oldToNew bool, f subdb.Filter[IDType], action func(g subdb.Group[IDType], s, e int64)) bool {
 	idpMet := idPointer == nil
 	offset := int64(0)
+	offsetFromStart := oldToNew
 
 	if !idpMet {
 		idpOffset, exitEarly := r.findIDP(idPointer, oldToNew)
 		if exitEarly {
 			return false
 		}
-
 		offset = idpOffset
+		offsetFromStart = true
 	}
 
-	exitEarly := r.readFunc(oldToNew, offset, func(gData []byte, s, e int64) bool {
+	exitEarly := r.readFunc(oldToNew, offsetFromStart, offset, func(gData []byte, s, e int64) bool {
 		g := parseGroup(r.templateGroup, r.templateFields, gData)
-		
+
 		ok, exitEarly := f.Match(g)
 
 		if ok {
