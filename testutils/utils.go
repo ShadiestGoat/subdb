@@ -167,12 +167,10 @@ func GenericReadQueryTest(idp *subdb.IDPointer[int], opts *QuerySetupOpts, t *te
 		rFirst, rLast := o[0].GetID(), o[len(o)-1].GetID()
 
 		if eFirst != rFirst {
-			t.Logf("Unexpected first value! Expected: %v, got: %v", eFirst, rFirst)
-			t.Fail()
+			t.Errorf("Unexpected first value! Expected: %v, got: %v", eFirst, rFirst)
 		}
 		if eLast != rLast {
-			t.Logf("Unexpected last value! Expected: %v, got: %v", eLast, rLast)
-			t.Fail()
+			t.Errorf("Unexpected last value! Expected: %v, got: %v", eLast, rLast)
 		}
 	})
 }
@@ -191,8 +189,7 @@ func GenericDeleteQueryTest(idp *subdb.IDPointer[int], opts *QuerySetupOpts, t *
 		o := b.ReadID(eFirst, eLast)
 
 		if len(o) != 0 {
-			t.Logf("Unexpected output! Got %#v, expected nothing!", o)
-			t.Fail()
+			t.Errorf("Unexpected output! Got %#v, expected nothing!", o)
 		}
 	})
 }

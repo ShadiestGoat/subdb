@@ -20,16 +20,14 @@ func TestDump(t *testing.T) {
 	b.Insert(testutils.MakeData(DUMP_RING_SIZE)...)
 	groups, idCache := b.Dump()
 	if len(groups) != len(idCache) {
-		t.Logf("Expected to have a same length groups & idCache, got: %v & %v", len(groups), len(idCache))
-		t.Fail()
+		t.Errorf("Expected to have a same length groups & idCache, got: %v & %v", len(groups), len(idCache))
 	}
 
 	b.Insert(testutils.MakeData(DUMP_RING_SIZE * 3)[DUMP_RING_SIZE:]...)
 	groups, idCache = b.Dump()
 	
 	if len(groups) != len(idCache) || len(groups) != DUMP_RING_SIZE {
-		t.Logf("Expected to have a valid post 2nd insert dump, got: %v & %v (expected %v)", len(groups), len(idCache), DUMP_RING_SIZE)
-		t.Fail()
+		t.Errorf("Expected to have a valid post 2nd insert dump, got: %v & %v (expected %v)", len(groups), len(idCache), DUMP_RING_SIZE)
 	}
 }
 

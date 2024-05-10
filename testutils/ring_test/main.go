@@ -64,16 +64,13 @@ func Insert(t *testing.T, newBackend NewBackend) {
 		rFirst, rLast := dumped[0].GetID(), dumped[len(dumped)-1].GetID()
 
 		if len(dumped) != neededLen {
-			t.Logf("Expected data len to be %v, got %v", neededLen, len(dumped))
-			t.Fail()
+			t.Errorf("Expected data len to be %v, got %v", neededLen, len(dumped))
 		}
 		if eLast != rLast {
-			t.Logf("The latest data isn't what is expected - expected %v, got %v", eLast, rLast)
-			t.Fail()
+			t.Errorf("The latest data isn't what is expected - expected %v, got %v", eLast, rLast)
 		}
 		if eFirst != rFirst {
-			t.Logf("The first val isn't what is expected - expected %v, got %v", eFirst, rFirst)
-			t.Fail()
+			t.Errorf("The first val isn't what is expected - expected %v, got %v", eFirst, rFirst)
 		}
 	}
 }
@@ -86,16 +83,14 @@ func Read(t *testing.T, testNew NewBackend) {
 		o := d.ReadID(TEST_IDS...)
 
 		if len(o) != len(TEST_IDS) - 2 {
-			t.Logf("Read back incorrect amt of IDs: inserted: %#v; read: %#v", TEST_IDS, o)
-			t.FailNow()
+			t.Fatalf("Read back incorrect amt of IDs: inserted: %#v; read: %#v", TEST_IDS, o)
 		}
 
 		expectedData := TEST_IDS[1:len(TEST_IDS)-1]
 
 		for i, v := range o {
 			if v.GetID() != expectedData[i] {
-				t.Logf("Failed to read back IDs: i: %v, expected: %v, got: %v", i, expectedData[i], v.GetID())
-				t.Fail()
+				t.Errorf("Failed to read back IDs: i: %v, expected: %v, got: %v", i, expectedData[i], v.GetID())
 			}
 		}
 	})
@@ -113,8 +108,7 @@ func Delete(t *testing.T, newBackend NewBackend) {
 		o := d.ReadID(TEST_IDS...)
 
 		if len(o) != 0 {
-			t.Logf("Didn't delete all IDs: tried deleting: %#v; read: %#v", TEST_IDS, o)
-			t.FailNow()
+			t.Fatalf("Didn't delete all IDs: tried deleting: %#v; read: %#v", TEST_IDS, o)
 		}
 	})
 
