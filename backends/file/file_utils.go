@@ -216,8 +216,9 @@ func (r *RealFile[IDType]) deleteRanges(oldToNew bool, inp [][2]int64) {
 	ranges := make([][2]int64, 0, len(inp))
 
 	for i, v := range inp {
-		if i != 0 && v[0] - ranges[i - 1][1] == 1 {
-			ranges[i - 1][1] = v[1]
+		lastRangeI := len(ranges) - 1
+		if i != 0 && v[0]-ranges[lastRangeI][1] == 1 {
+			ranges[lastRangeI][1] = v[1]
 		} else {
 			ranges = append(ranges, v)
 		}
@@ -232,17 +233,17 @@ func (r *RealFile[IDType]) deleteRanges(oldToNew bool, inp [][2]int64) {
 	for i, l := range ranges {
 		readRange := [2]int64{l[1] + 1}
 
-		if i == len(ranges) - 1 {
+		if i == len(ranges)-1 {
 			readRange[1] = size
 		} else {
-			readRange[1] = ranges[i + 1][0]
+			readRange[1] = ranges[i+1][0]
 		}
 
-		buff := make([]byte, readRange[1] - readRange[0])
+		buff := make([]byte, readRange[1]-readRange[0])
 
 		r.f.ReadAt(buff, readRange[0])
-		r.f.WriteAt(buff, l[0] - delSize)
-		
+		r.f.WriteAt(buff, l[0]-delSize)
+
 		delSize += l[1] - l[0] + 1
 	}
 
