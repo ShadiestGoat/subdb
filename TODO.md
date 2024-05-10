@@ -1,32 +1,34 @@
 - [ ] Storage file backend
   - [ ] Start/Stop hook
   - [ ] Periodic flushing
+  - [ ] Real read/write for file
+  - [ ] All static field optimization
 - [x] Exclude IDP approx (useful for backend swaps)
   - [x] RingArray
   - [x] RingLL
   - [x] File
   - [x] All
-- [ ] Write tests for specific backends
-  - [ ] All
-    - [ ] Insert
-    - [ ] Delete
-    - [ ] DeleteID
-    - [ ] Read
-    - [ ] ReadID
-  - [ ] File (io only, flush is handled by All)
-    - [ ] Insert
-    - [ ] Delete
-    - [ ] DeleteID
-    - [ ] Read
-    - [ ] ReadID
-  - [ ] Ring - Array
+- [x] Write tests for specific backends
+  - [x] All
+    - [x] Insert
+    - [x] Delete
+    - [x] DeleteID
+    - [x] Read
+    - [x] ReadID
+  - [x] File (io only, flush is handled by All)
+    - [x] Insert
+    - [x] Delete
+    - [x] DeleteID
+    - [x] Read
+    - [x] ReadID
+  - [x] Ring - Array
     - [x] Insert
     - [x] Delete
     - [x] DeleteIDQuery
     - [x] ReadID
-  - [ ] Ring - Linked List
-    - [ ] Insert
-    - [ ] Delete
-    - [ ] DeleteID
-    - [ ] Read
-    - [ ] ReadID
+  - [x] Ring - Linked List
+    - [x] Insert
+    - [x] Delete
+    - [x] DeleteID
+    - [x] Read
+    - [x] ReadID
