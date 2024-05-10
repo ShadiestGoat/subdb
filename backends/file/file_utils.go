@@ -25,6 +25,16 @@ func (r *RealFile[IDType]) readFunc(oldToNew bool, offset int64, h func(gData []
 	}
 
 	for {
+		if oldToNew {
+			if offset >= size {
+				break
+			}
+		} else {
+			if offset < 0 {
+				break
+			}
+		}
+
 		r.f.Seek(offset, 0)
 
 		// get the grp size
@@ -52,14 +62,8 @@ func (r *RealFile[IDType]) readFunc(oldToNew bool, offset int64, h func(gData []
 
 		if oldToNew {
 			offset = e + 1
-			if offset >= size {
-				break
-			}
 		} else {
 			offset = s - int64(r.groupSizeSize)
-			if offset < 0 {
-				break
-			}
 		}
 	}
 
