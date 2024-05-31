@@ -16,7 +16,7 @@ type File[IDType subdb.IDConstraint] struct {
 	stopChan chan bool
 }
 
-func NewFileBackend[IDType subdb.IDConstraint](opts *FileOpts, tpl *TplGroup[IDType], flushFrequency time.Duration) *File[IDType] {
+func NewFileBackend[IDType subdb.IDConstraint](opts *FileOpts, tpl subdb.Group[IDType], flushFrequency time.Duration) *File[IDType] {
 	return &File[IDType]{
 		flush: all.NewAllBackend[IDType](opts.NewestIsLargest),
 		file:  NewFileOnly(opts, tpl),

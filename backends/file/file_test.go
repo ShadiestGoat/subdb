@@ -33,10 +33,7 @@ func newBackend(fName string, newestIsLargest bool) *file.RealFile[int] {
 		NewestIsLargest: newestIsLargest,
 		Path:            n,
 		Perms:           0755,
-	}, &file.TplGroup[int]{
-		Group:  g,
-		Fields: g.Store(),
-	})
+	}, g)
 }
 
 func cleanData(fName string) {

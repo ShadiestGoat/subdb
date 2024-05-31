@@ -39,15 +39,8 @@ type FileOpts struct {
 	Perms os.FileMode
 }
 
-type TplGroup[IDType subdb.IDConstraint] struct {
-	// Example group structure
-	Group subdb.Group[IDType]
-	// Example fields of the group. First field must be the ID
-	Fields []subdb.Field
-}
-
 // Make a new file-only backend. In practice, NewFile should be used.
-func NewFileOnly[IDType subdb.IDConstraint](opts *FileOpts, tpl *TplGroup[IDType]) *RealFile[IDType] {
+func NewFileOnly[IDType subdb.IDConstraint](opts *FileOpts, tpl subdb.Group[IDType]) *RealFile[IDType] {
 	if opts == nil {
 		panic("Can't create file backend - no opts")
 	}
@@ -69,8 +62,8 @@ func NewFileOnly[IDType subdb.IDConstraint](opts *FileOpts, tpl *TplGroup[IDType
 	return &RealFile[IDType]{
 		f:               f,
 		lock:            &sync.Mutex{},
-		templateGroup:   tpl.Group,
-		templateFields:  tpl.Fields,
+		templateGroup:   tpl,
+		templateFields:  tpl.Store(),
 		newestIsLargest: opts.NewestIsLargest,
 		groupSizeSize:   opts.GroupSizeSize,
 	}
