@@ -9,6 +9,8 @@ type DeleteIDFunc[IDType IDConstraint] func(ids ...IDType)
 type DeleteFunc[IDType IDConstraint] func(idPointer *IDPointer[IDType], oldToNew bool, f Filter[IDType])
 type ReadFunc[IDType IDConstraint] func(idPointer *IDPointer[IDType], oldToNew bool, f Filter[IDType]) ([]Group[IDType], bool)
 type ReadIDFunc[IDType IDConstraint] func(ids ...IDType) []Group[IDType]
+type StartFunc[IDType IDConstraint] func()
+type StopFunc[IDType IDConstraint] func()
 
 type BackendWithInsertFunc[IDType IDConstraint] interface {
 	Insert(groups ...Group[IDType])
@@ -25,6 +27,12 @@ type BackendWithReadFunc[IDType IDConstraint] interface {
 type BackendWithReadIDFunc[IDType IDConstraint] interface {
 	ReadID(ids ...IDType) []Group[IDType]
 }
+type BackendWithStartFunc[IDType IDConstraint] interface {
+	Start()
+}
+type BackendWithStopFunc[IDType IDConstraint] interface {
+	Stop()
+}
 
 type BackendWithEverything[IDType IDConstraint] interface {
 	BackendWithInsertFunc[IDType]
@@ -40,6 +48,8 @@ type Hooks[IDType IDConstraint] struct {
 	Delete   []DeleteFunc[IDType]
 	Read     []ReadFunc[IDType]
 	ReadID   []ReadIDFunc[IDType]
+	Start    []StartFunc[IDType]
+	Stop     []StopFunc[IDType]
 }
 
 func (h *Hooks[IDType]) DoInsert(cb chan bool, groups ...Group[IDType]) {
@@ -110,4 +120,16 @@ func (h *Hooks[IDType]) DoRead(idPointer *IDPointer[IDType], oldToNew bool, f Fi
 
 func (h *Hooks[IDType]) DoReadID(ids ...IDType) []Group[IDType] {
 	return HooksReadID(h.ReadID, ids...)
+}
+
+func (h *Hooks[IDType]) DoStart() {
+	for _, h := range h.Start {
+		h()
+	}
+}
+
+func (h *Hooks[IDType]) DoStop() {
+	for _, h := range h.Stop {
+		h()
+	}
 }

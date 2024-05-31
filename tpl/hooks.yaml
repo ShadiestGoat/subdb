@@ -1,14 +1,17 @@
 - name: Insert
+  type: async
   args: 
     - name: 'groups'
       type: 'Group[IDType]'
       spread: true
 - name: DeleteID
+  type: async
   args: &idArgs
     - name: 'ids'
       type: IDType
       spread: true
 - name: Delete
+  type: async
   async:
     iVar: i
     extraLogic: |-
@@ -28,8 +31,18 @@
       type: Filter[IDType]
       spread: false
 - name: Read
+  type: special
   args: *argsQuery
   returns: "([]Group[IDType], bool)"
 - name: ReadID
+  type: special
   args: *idArgs
   returns: "[]Group[IDType]"
+- name: Start
+  excludeFromEverything: true
+  type: sync
+  args: []
+- name: Stop
+  excludeFromEverything: true
+  type: sync
+  args: []

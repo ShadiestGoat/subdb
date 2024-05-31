@@ -1,6 +1,8 @@
 package file
 
 import (
+	"time"
+
 	"github.com/shadiestgoat/subdb"
 	"github.com/shadiestgoat/subdb/backends/all"
 )
@@ -9,12 +11,16 @@ import (
 type File[IDType subdb.IDConstraint] struct {
 	flush *all.AllBackend[IDType]
 	file  *RealFile[IDType]
+	FlushFreq time.Duration
+	t *time.Ticker
+	stopChan chan bool
 }
 
-func NewFileBackend[IDType subdb.IDConstraint](opts *FileOpts, tpl *TplGroup[IDType]) *File[IDType] {
+func NewFileBackend[IDType subdb.IDConstraint](opts *FileOpts, tpl *TplGroup[IDType], flushFrequency time.Duration) *File[IDType] {
 	return &File[IDType]{
 		flush: all.NewAllBackend[IDType](opts.NewestIsLargest),
 		file:  NewFileOnly(opts, tpl),
+		FlushFreq: flushFrequency,
 	}
 }
 
@@ -25,8 +31,9 @@ func (r *File[IDType]) Register(h *subdb.Hooks[IDType]) {
 	h.Delete = append(h.Delete, r.Delete)
 	h.Read = append(h.Read, r.Read)
 	h.ReadID = append(h.ReadID, r.ReadID)
+	h.Stop = append(h.Stop, r.Stop)
+	h.Start = append(h.Start, r.Start)
 }
-
 
 func (r *File[IDType]) ReadID(ids ...IDType) []subdb.Group[IDType] {
 	return subdb.HooksReadID([]subdb.ReadIDFunc[IDType]{
@@ -84,4 +91,28 @@ func (r *File[IDType]) Insert(groups ...subdb.Group[IDType]) {
 
 func (r *File[IDType]) Flush() {
 	r.file.Insert(r.flush.Reset()...)
+}
+
+func (r *File[IDType]) loopFlush() {
+	for {
+		select {
+		case <- r.stopChan:
+			return
+		case <- r.t.C:
+			r.Flush()
+		}
+	}
+}
+
+func (r *File[IDType]) Start() {
+	r.t = time.NewTicker(r.FlushFreq)
+	r.stopChan = make(chan bool)
+	go r.loopFlush()
+}
+
+func (r *File[IDType]) Stop() {
+	close(r.stopChan)
+	r.t.Stop()
+	r.t = nil
+	r.Flush()
 }

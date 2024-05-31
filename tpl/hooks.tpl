@@ -32,6 +32,7 @@ type BackendWith{{ .name }}Func[IDType IDConstraint] interface {
 
 type BackendWithEverything[IDType IDConstraint] interface {
 {{ range . -}}
+	{{- if .excludeFromEverything -}} {{ continue }} {{- end -}}
 	BackendWith{{ .name }}Func[IDType]
 {{ end }}
 }
@@ -73,17 +74,20 @@ type Hooks[IDType IDConstraint] struct {
 	}
 {{ end -}}
 
-{{- define "syncFunc" }}
+{{- define "specialFunc" }}
 	func (h *Hooks[IDType]) Do{{ .name }}({{ include "args" (dict "t" "defArgs" "v" .args) }}){{ empty .returns | ternary "" (print " " .returns) }} {
 		return Hooks{{ .name }}(h.{{ .name }}, {{ include "args" (dict "t" "inpArgs" "v" .args) }})
 	}
 {{ end -}}
 
-{{ range . }}
-	{{- $fType := "syncFunc" -}}
-	{{- if (empty .returns) -}}
-		{{- $fType = "asyncFunc" -}}
-	{{- end -}}
+{{- define "syncFunc" }}
+	func (h *Hooks[IDType]) Do{{ .name }}({{ include "args" (dict "t" "defArgs" "v" .args) }}) {
+		for _, h := range h.{{ .name }} {
+			h({{ include "args" (dict "t" "inpArgs" "v" .args)}})
+		}
+	}
+{{ end -}}
 
-	{{- include $fType . | indent 0 -}}
+{{ range . }}
+	{{- include (print .type "Func") . | indent 0 -}}
 {{- end }}
