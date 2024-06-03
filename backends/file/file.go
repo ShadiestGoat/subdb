@@ -20,12 +20,12 @@ import (
 
 // Shouldn't be used as a backend, but if you REALLY want to then go ahead ig
 type RealFile[IDType subdb.IDConstraint] struct {
-	f *os.File
-	lock *sync.Mutex
-	templateGroup subdb.Group[IDType]
-	templateFields []subdb.Field
+	f               *os.File
+	lock            *sync.Mutex
+	templateGroup   subdb.Group[IDType]
+	templateFields  []subdb.Field
 	newestIsLargest bool
-	groupSizeSize int
+	groupSizeSize   int
 }
 
 type FileOpts struct {
@@ -54,7 +54,7 @@ func NewFileOnly[IDType subdb.IDConstraint](opts *FileOpts, tpl subdb.Group[IDTy
 		opts.Perms = 0755
 	}
 
-	f, err := os.OpenFile(opts.Path, os.O_RDWR | os.O_CREATE, opts.Perms)
+	f, err := os.OpenFile(opts.Path, os.O_RDWR|os.O_CREATE, opts.Perms)
 	if err != nil {
 		panic(err)
 	}
@@ -92,7 +92,7 @@ func (r *RealFile[IDType]) ReadID(ids ...IDType) []subdb.Group[IDType] {
 
 		g := parseGroupWithoutID(r.templateGroup, r.templateFields[1:], f, gData[off:])
 		o = append(o, g)
-		
+
 		delete(m, id)
 		return len(m) == 0
 	})
@@ -137,7 +137,7 @@ func (r *RealFile[IDType]) DeleteID(ids ...IDType) {
 		if !m[id] {
 			return false
 		}
-		
+
 		o = append(o, [2]int64{s, e})
 
 		delete(m, id)

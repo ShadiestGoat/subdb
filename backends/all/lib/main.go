@@ -19,7 +19,6 @@ func cmpNewIsLarge[IDType subdb.IDConstraint](g subdb.Group[IDType], t IDType) i
 	return -1
 }
 
-
 func cmpOldIsLarge[IDType subdb.IDConstraint](g subdb.Group[IDType], t IDType) int {
 	return -cmpNewIsLarge(g, t)
 }

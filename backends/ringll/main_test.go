@@ -12,7 +12,6 @@ func newBackend(dataSize int, newestIsBiggest bool) subdb.BackendWithEverything[
 	return ringll.NewRing[int](dataSize, newestIsBiggest)
 }
 
-
 func TestInsert(t *testing.T) {
 	ringTest.Insert(t, newBackend)
 }

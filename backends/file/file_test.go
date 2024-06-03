@@ -50,7 +50,7 @@ func TestFileReadEmpty(t *testing.T) {
 			n = "oldToNew"
 		}
 
-		t.Run("readEmpty" + n, func(t *testing.T) {
+		t.Run("readEmpty"+n, func(t *testing.T) {
 			readData, _ := b.Read(nil, true, testutils.MatchAll[int]{})
 
 			if len(readData) != 0 {
@@ -109,7 +109,7 @@ func TestFileReadID(t *testing.T) {
 func TestFileRead(t *testing.T) {
 	i := 0
 	testutils.GenerateGenericQueryTest(500, t, func(newestIsBiggest bool) subdb.BackendWithEverything[int] {
-		b := newBackend("read" + fmt.Sprint(i), newestIsBiggest)
+		b := newBackend("read"+fmt.Sprint(i), newestIsBiggest)
 		i++
 		return b
 	}, testutils.GenericReadQueryTest)
@@ -134,7 +134,7 @@ func TestFileDeleteID(t *testing.T) {
 	b.DeleteID(ids[0], ids[len(ids)-1])
 	readData, _ := b.Read(nil, true, testutils.MatchAll[int]{})
 
-	expectedData := ids[1:len(ids)-1]
+	expectedData := ids[1 : len(ids)-1]
 
 	if len(readData) != len(expectedData) {
 		t.Errorf("Got bad read id len, exp: %v, got %v", len(expectedData), len(readData))
@@ -151,7 +151,7 @@ func TestFileDeleteID(t *testing.T) {
 func TestFileDelete(t *testing.T) {
 	i := 0
 	testutils.GenerateGenericQueryTest(500, t, func(newestIsBiggest bool) subdb.BackendWithEverything[int] {
-		b := newBackend("del" + fmt.Sprint(i), newestIsBiggest)
+		b := newBackend("del"+fmt.Sprint(i), newestIsBiggest)
 		i++
 		return b
 	}, testutils.GenericDeleteQueryTest)

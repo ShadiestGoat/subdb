@@ -14,11 +14,11 @@ type Node[IDType subdb.IDConstraint] struct {
 // A linked list ring backend. Works in a similar way to a regular ring backend, but instead of an array, uses a linked list
 // Comparison table between an array-backend and a linked list ring backend: TODO:
 type RingLinkedListBackend[IDType subdb.IDConstraint] struct {
-	idCache map[IDType]*Node[IDType]
-	size    int
-	maxSize int
+	idCache         map[IDType]*Node[IDType]
+	size            int
+	maxSize         int
 	newestIsLargest bool
-	lock    *sync.RWMutex
+	lock            *sync.RWMutex
 
 	newest, oldest *Node[IDType]
 }
@@ -59,7 +59,7 @@ func (r *RingLinkedListBackend[IDType]) queryFunc(idPointer *subdb.IDPointer[IDT
 
 	if idPointer != nil {
 		idpID = idPointer.ID
-		
+
 		largest, smallest := r.oldest.Value.GetID(), r.newest.Value.GetID()
 
 		if r.newestIsLargest {
@@ -93,15 +93,15 @@ func (r *RingLinkedListBackend[IDType]) queryFunc(idPointer *subdb.IDPointer[IDT
 
 			idpNode := r.newest
 			idpNext := nextNewToOld[IDType]
-	        
+
 			if idPointer.Hint == subdb.LOCATION_HINT_OLDEST {
 				idpNode = r.oldest
 				idpNext = nextOldToNew[IDType]
 			}
-			
+
 			// xor, lmao
 			nLtIDP := r.newestIsLargest != oldToNew
-	
+
 			for {
 				if idpNode == nil {
 					// we couldn't find the starting id, so quit early
@@ -110,7 +110,7 @@ func (r *RingLinkedListBackend[IDType]) queryFunc(idPointer *subdb.IDPointer[IDT
 				}
 
 				idpNodeID := idpNode.Value.GetID()
-				
+
 				if nLtIDP != (idpNodeID < idpID) {
 					idp = idpNode
 					break
@@ -136,7 +136,7 @@ func (r *RingLinkedListBackend[IDType]) queryFunc(idPointer *subdb.IDPointer[IDT
 				}
 			}
 		}
-		
+
 		// This is basically a sanity check. It should always be false, but best make sure I guess?
 		if idp == nil {
 			return false

@@ -13,7 +13,7 @@ func HooksReadID[IDType IDConstraint](hooks []ReadIDFunc[IDType], ids ...IDType)
 		buff := f(ids...)
 		o = append(o, buff...)
 
-		if len(o) == len(ids) || i == len(hooks) - 1 {
+		if len(o) == len(ids) || i == len(hooks)-1 {
 			break
 		}
 

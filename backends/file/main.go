@@ -7,19 +7,18 @@ import (
 	"github.com/shadiestgoat/subdb/backends/all"
 )
 
-
 type File[IDType subdb.IDConstraint] struct {
-	flush *all.AllBackend[IDType]
-	file  *RealFile[IDType]
+	flush     *all.AllBackend[IDType]
+	file      *RealFile[IDType]
 	FlushFreq time.Duration
-	t *time.Ticker
-	stopChan chan bool
+	t         *time.Ticker
+	stopChan  chan bool
 }
 
 func NewFileBackend[IDType subdb.IDConstraint](opts *FileOpts, tpl subdb.Group[IDType], flushFrequency time.Duration) *File[IDType] {
 	return &File[IDType]{
-		flush: all.NewAllBackend[IDType](opts.NewestIsLargest),
-		file:  NewFileOnly(opts, tpl),
+		flush:     all.NewAllBackend[IDType](opts.NewestIsLargest),
+		file:      NewFileOnly(opts, tpl),
 		FlushFreq: flushFrequency,
 	}
 }
@@ -60,7 +59,7 @@ func (r *File[IDType]) DeleteID(ids ...IDType) {
 		deletedMap[id] = true
 	}
 
-	newIDs := make([]IDType, 0, len(ids) - len(deletedIDs))
+	newIDs := make([]IDType, 0, len(ids)-len(deletedIDs))
 
 	for _, id := range ids {
 		if !deletedMap[id] {
@@ -96,9 +95,9 @@ func (r *File[IDType]) Flush() {
 func (r *File[IDType]) loopFlush() {
 	for {
 		select {
-		case <- r.stopChan:
+		case <-r.stopChan:
 			return
-		case <- r.t.C:
+		case <-r.t.C:
 			r.Flush()
 		}
 	}

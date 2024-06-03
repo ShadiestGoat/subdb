@@ -15,7 +15,7 @@ type TestGroup struct {
 	ID int
 }
 
-type MatchAll[IDType subdb.IDConstraint] struct {}
+type MatchAll[IDType subdb.IDConstraint] struct{}
 
 func (v MatchAll[IDType]) Match(subdb.Group[IDType]) (bool, bool) {
 	return true, false
@@ -52,7 +52,7 @@ type QuerySetupOpts struct {
 }
 
 type NewBackendFunc = func(newestIsLargest bool) subdb.BackendWithEverything[int]
-type PrepBackendFunc = func (idp *subdb.IDPointer[int], q *QuerySetupOpts) subdb.BackendWithEverything[int]
+type PrepBackendFunc = func(idp *subdb.IDPointer[int], q *QuerySetupOpts) subdb.BackendWithEverything[int]
 
 func prepBackend(mkBackend NewBackendFunc) PrepBackendFunc {
 	return func(idp *subdb.IDPointer[int], q *QuerySetupOpts) subdb.BackendWithEverything[int] {
@@ -71,10 +71,10 @@ func prepBackend(mkBackend NewBackendFunc) PrepBackendFunc {
 
 func GenerateGenericQueryTest(
 	dataSize int, t *testing.T, newBackend func(newestIsBiggest bool) subdb.BackendWithEverything[int],
-	testFunc func (idp *subdb.IDPointer[int], opts *QuerySetupOpts, t *testing.T, b PrepBackendFunc),
-	) {
+	testFunc func(idp *subdb.IDPointer[int], opts *QuerySetupOpts, t *testing.T, b PrepBackendFunc),
+) {
 	arr := []bool{true, false}
-	idps := []int{0, dataSize/2 - 1, dataSize/2, dataSize/2 + 1, dataSize - 1}
+	idps := []int{0, dataSize/2 - 1, dataSize / 2, dataSize/2 + 1, dataSize - 1}
 
 	for _, newestIsLargest := range arr {
 		for _, hasIDP := range arr {
@@ -85,24 +85,24 @@ func GenerateGenericQueryTest(
 					}
 
 					var idp *subdb.IDPointer[int]
-		
+
 					if hasIDP {
 						idp = &subdb.IDPointer[int]{
 							ID:             idpV,
 							ExcludePointer: exclIDP,
 						}
 					}
-		
+
 					if !hasIDP && exclIDP {
 						continue
 					}
-		
+
 					for _, oldToNew := range arr {
 						testFunc(idp, &QuerySetupOpts{
 							OldToNew:        oldToNew,
 							NewestIsLargest: newestIsLargest,
 							DataSize:        dataSize,
-							QuerySize:       int(math.Floor(float64(dataSize)/10)),
+							QuerySize:       int(math.Floor(float64(dataSize) / 10)),
 						}, t, prepBackend(newBackend))
 					}
 				}
@@ -144,7 +144,7 @@ func GenericQueryExpectation(idp *subdb.IDPointer[int], opts *QuerySetupOpts) (e
 	if eLast < 0 {
 		eLast = 0
 	}
-	
+
 	if eFirst >= opts.DataSize {
 		eFirst = opts.DataSize - 1
 	}
@@ -155,7 +155,7 @@ func GenericQueryExpectation(idp *subdb.IDPointer[int], opts *QuerySetupOpts) (e
 	if eFirst == eLast && idp != nil && idp.ExcludePointer {
 		eLen = 0
 	} else {
-		eLen = int(math.Abs(float64(eFirst) - float64(eLast))) + 1
+		eLen = int(math.Abs(float64(eFirst)-float64(eLast))) + 1
 		eEarly = eLen == opts.QuerySize
 	}
 

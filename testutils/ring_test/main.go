@@ -11,10 +11,9 @@ const (
 	RING_SIZE = 100
 )
 
-
 var (
 	TestSizes = []int{
-		RING_SIZE/10,
+		RING_SIZE / 10,
 		RING_SIZE - 1,
 		RING_SIZE,
 		RING_SIZE + 1,
@@ -27,7 +26,7 @@ var (
 
 type NewBackend func(dataSize int, newestIsBiggest bool) subdb.BackendWithEverything[int]
 
-func backendWrap(f NewBackend) func (bool) subdb.BackendWithEverything[int] {
+func backendWrap(f NewBackend) func(bool) subdb.BackendWithEverything[int] {
 	return func(b bool) subdb.BackendWithEverything[int] {
 		return f(RING_SIZE, b)
 	}
@@ -35,7 +34,7 @@ func backendWrap(f NewBackend) func (bool) subdb.BackendWithEverything[int] {
 
 func Insert(t *testing.T, newBackend NewBackend) {
 	sizes := []int{
-		RING_SIZE/10,
+		RING_SIZE / 10,
 		RING_SIZE - 1,
 		RING_SIZE,
 		RING_SIZE + 1,
@@ -49,7 +48,7 @@ func Insert(t *testing.T, newBackend NewBackend) {
 		b := newBackend(RING_SIZE, true)
 		d := testutils.MakeData(s)
 		b.Insert(d...)
-		
+
 		dumped, _ := b.Read(nil, true, testutils.MatchAll[int]{})
 		neededLen := s
 		if neededLen > RING_SIZE {
@@ -82,11 +81,11 @@ func Read(t *testing.T, testNew NewBackend) {
 	t.Run("IDs", func(t *testing.T) {
 		o := d.ReadID(TEST_IDS...)
 
-		if len(o) != len(TEST_IDS) - 2 {
+		if len(o) != len(TEST_IDS)-2 {
 			t.Fatalf("Read back incorrect amt of IDs: inserted: %#v; read: %#v", TEST_IDS, o)
 		}
 
-		expectedData := TEST_IDS[1:len(TEST_IDS)-1]
+		expectedData := TEST_IDS[1 : len(TEST_IDS)-1]
 
 		for i, v := range o {
 			if v.GetID() != expectedData[i] {
@@ -97,7 +96,6 @@ func Read(t *testing.T, testNew NewBackend) {
 
 	testutils.GenerateGenericQueryTest(RING_SIZE, t, backendWrap(testNew), testutils.GenericReadQueryTest)
 }
-
 
 func Delete(t *testing.T, newBackend NewBackend) {
 	d := newBackend(RING_SIZE, true)

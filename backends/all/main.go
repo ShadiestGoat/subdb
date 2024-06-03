@@ -28,7 +28,7 @@ func (r *AllBackend[IDType]) Insert(groups ...subdb.Group[IDType]) {
 	if len(groups) == 0 {
 		return
 	}
-	
+
 	r.real.Lock.Lock()
 	defer r.real.Lock.Unlock()
 

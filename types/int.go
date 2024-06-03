@@ -17,12 +17,12 @@ func (i intBase[T]) Encode() []byte {
 }
 
 func (i *intBase[T]) Load(v []byte) {
-	i.Value = decodeInt[T](i.Size, v) 
+	i.Value = decodeInt[T](i.Size, v)
 }
 
 func (i intBase[T]) New() subdb.Field {
 	return &intBase[T]{
-		Size:  i.Size,
+		Size: i.Size,
 	}
 }
 

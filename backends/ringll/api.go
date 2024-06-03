@@ -9,13 +9,13 @@ import (
 // Creates a new linked list ring backend
 func NewRing[IDType subdb.IDConstraint](size int, newestIsLargest bool) *RingLinkedListBackend[IDType] {
 	return &RingLinkedListBackend[IDType]{
-		idCache: map[IDType]*Node[IDType]{},
-		size:    0,
-		maxSize: size,
-		lock:    &sync.RWMutex{},
+		idCache:         map[IDType]*Node[IDType]{},
+		size:            0,
+		maxSize:         size,
+		lock:            &sync.RWMutex{},
 		newestIsLargest: newestIsLargest,
-		newest:  nil,
-		oldest:  nil,
+		newest:          nil,
+		oldest:          nil,
 	}
 }
 
