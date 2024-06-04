@@ -95,7 +95,7 @@ func nextNewToOld[IDType subdb.IDConstraint](n *Node[IDType]) *Node[IDType] {
 }
 
 func (r *RingLinkedListBackend[IDType]) Delete(idPointer *subdb.IDPointer[IDType], oldToNew bool, f subdb.Filter[IDType]) {
-	r.lock.RLock()
+	r.lock.Lock()
 	defer r.lock.Unlock()
 
 	r.queryFunc(idPointer, oldToNew, f, func(g subdb.Group[IDType]) {
