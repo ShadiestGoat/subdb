@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/shadiestgoat/subdb"
+	"github.com/shadiestgoat/subdb/filters"
 	"github.com/shadiestgoat/subdb/types"
 )
 
@@ -27,19 +28,29 @@ func (v MatchAll[IDType]) Copy() subdb.Filter[IDType] {
 
 // Matches the first {Limit} values
 type Filter[IDType subdb.IDConstraint] struct {
-	Limit int
+	*filters.Limit[IDType]
 	T     *testing.T
 }
 
+func newTestFilter(t *testing.T, l int) subdb.Filter[int] {
+	return &Filter[int]{
+		Limit: &filters.Limit[int]{
+			Left: l,
+		},
+		T:     t,
+	}
+}
+
 func (f *Filter[IDType]) Match(g subdb.Group[IDType]) (bool, bool) {
-	f.Limit--
-	f.T.Logf("Filter Match (%v): %v (limit: %v)", f.Limit >= 0, g.GetID(), f.Limit)
-	return f.Limit >= 0, f.Limit <= 0
+	ogL := f.Left
+	ok, early := f.Limit.Match(g)
+	f.T.Logf("Filter: (%v, %v): %v (left: %v)", ok, early, g.GetID(), ogL)
+	return ok, early
 }
 
 func (f *Filter[IDType]) Copy() subdb.Filter[IDType] {
 	return &Filter[IDType]{
-		Limit: f.Limit,
+		Limit: f.Limit.Copy().(*filters.Limit[IDType]),
 		T:     f.T,
 	}
 }
@@ -207,10 +218,7 @@ func GenericReadQueryTest(idp *subdb.IDPointer[int], opts *QuerySetupOpts, t *te
 	t.Run(GenerateGenericTestName("read", idp, opts), func(t *testing.T) {
 		b := prepBackend(idp, opts)
 
-		f := &Filter[int]{
-			Limit: opts.QuerySize,
-			T:     t,
-		}
+		f := newTestFilter(t, opts.QuerySize)
 
 		eFirst, eLast, eLen, eEarly := GenericQueryExpectation(idp, opts)
 		o, early := b.Read(idp, opts.OldToNew, f)
@@ -248,10 +256,7 @@ func GenericDeleteQueryTest(idp *subdb.IDPointer[int], opts *QuerySetupOpts, t *
 	t.Run(GenerateGenericTestName("delete", idp, opts), func(t *testing.T) {
 		b := prepBackend(idp, opts)
 
-		f := &Filter[int]{
-			Limit: opts.QuerySize,
-			T:     t,
-		}
+		f := newTestFilter(t, opts.QuerySize)
 
 		b.Delete(idp, opts.OldToNew, f)
 
