@@ -72,6 +72,10 @@ func (r *CommonArrayBackendUtil[IDType]) queryFunc(idPointer *subdb.IDPointer[ID
 		i = len(r.Items) - 1
 	}
 
+	if i < 0 || i >= len(r.Items) {
+		return false
+	}
+
 	for {
 		v := r.Items[i]
 
