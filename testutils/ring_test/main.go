@@ -95,6 +95,7 @@ func Read(t *testing.T, testNew NewBackend) {
 	})
 
 	testutils.GenerateGenericQueryTest(RING_SIZE, t, backendWrap(testNew), testutils.GenericReadQueryTest)
+	testutils.GenerateGenericQueryTest(0, t, backendWrap(testNew), testutils.GenericReadQueryTest)
 }
 
 func Delete(t *testing.T, newBackend NewBackend) {
