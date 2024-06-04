@@ -108,11 +108,18 @@ func TestFileReadID(t *testing.T) {
 
 func TestFileRead(t *testing.T) {
 	i := 0
-	testutils.GenerateGenericQueryTest(500, t, func(newestIsBiggest bool) subdb.BackendWithEverything[int] {
+
+	newBackend := func(newestIsBiggest bool) subdb.BackendWithEverything[int] {
 		b := newBackend("read"+fmt.Sprint(i), newestIsBiggest)
 		i++
 		return b
-	}, testutils.GenericReadQueryTest)
+	}
+
+	size := []int{0, 5, 500}
+
+	for _, s := range size {
+		testutils.GenerateGenericQueryTest(s, t, newBackend, testutils.GenericReadQueryTest)
+	}
 
 	for j := 0; j < i; j++ {
 		cleanData("read" + fmt.Sprint(j))

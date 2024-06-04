@@ -32,9 +32,9 @@ type Filter[IDType subdb.IDConstraint] struct {
 }
 
 func (f *Filter[IDType]) Match(g subdb.Group[IDType]) (bool, bool) {
-	f.T.Logf("Filter Match: %v (limit: %v)", g.GetID(), f.Limit)
 	f.Limit--
-	return true, f.Limit == 0
+	f.T.Logf("Filter Match (%v): %v (limit: %v)", f.Limit >= 0, g.GetID(), f.Limit)
+	return f.Limit >= 0, f.Limit <= 0
 }
 
 func (f *Filter[IDType]) Copy() subdb.Filter[IDType] {
@@ -112,6 +112,10 @@ func GenerateGenericQueryTest(
 }
 
 func GenericQueryExpectation(idp *subdb.IDPointer[int], opts *QuerySetupOpts) (eFirst, eLast, eLen int, eEarly bool) {
+	if opts.DataSize == 0 {
+		return
+	}
+
 	dir := 1
 
 	if opts.OldToNew != opts.NewestIsLargest {
@@ -137,13 +141,17 @@ func GenericQueryExpectation(idp *subdb.IDPointer[int], opts *QuerySetupOpts) (e
 	d := opts.QuerySize - 1
 	eLast = eFirst + (d * dir)
 
-	if eFirst < 0 {
-		eLen = 0
-		eFirst = 0
+	cleanup := func () {
+		if eFirst < 0 {
+			eLen = 0
+			eFirst = 0
+		}
+		if eLast < 0 {
+			eLast = 0
+		}
 	}
-	if eLast < 0 {
-		eLast = 0
-	}
+
+	cleanup()
 
 	if eFirst >= opts.DataSize {
 		eFirst = opts.DataSize - 1
@@ -156,8 +164,14 @@ func GenericQueryExpectation(idp *subdb.IDPointer[int], opts *QuerySetupOpts) (e
 		eLen = 0
 	} else {
 		eLen = int(math.Abs(float64(eFirst)-float64(eLast))) + 1
+		if eLen > opts.QuerySize {
+			eLen = opts.QuerySize
+		}
+	
 		eEarly = eLen == opts.QuerySize
 	}
+
+	cleanup()
 
 	return
 }
@@ -183,6 +197,9 @@ func GenerateGenericTestName(n string, idp *subdb.IDPointer[int], opts *QuerySet
 		name = append(name, "newSmall")
 	}
 
+	name = append(name, fmt.Sprintf("ds=%v", opts.DataSize))
+	name = append(name, fmt.Sprintf("qs=%v", opts.QuerySize))
+
 	return strings.Join(name, "_")
 }
 
@@ -199,11 +216,11 @@ func GenericReadQueryTest(idp *subdb.IDPointer[int], opts *QuerySetupOpts, t *te
 		o, early := b.Read(idp, opts.OldToNew, f)
 
 		if len(o) != eLen {
-			t.Fatalf("Unexpected output len: %v, expected %v", len(o), eLen)
+			t.Errorf("Unexpected output len: %v, expected %v", len(o), eLen)
 		}
 
 		if early != eEarly {
-			t.Fatalf("Failed query, unexpected early exit status: %v, expected %v", early, eEarly)
+			t.Errorf("Failed query, unexpected early exit status: %v, expected %v", early, eEarly)
 		}
 
 		if eLen == 0 {
