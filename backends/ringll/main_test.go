@@ -17,9 +17,9 @@ func TestInsert(t *testing.T) {
 }
 
 func TestRead(t *testing.T) {
-	ringTest.Insert(t, newBackend)
+	ringTest.Read(t, newBackend)
 }
 
 func TestDelete(t *testing.T) {
-	ringTest.Insert(t, newBackend)
+	ringTest.Delete(t, newBackend)
 }
